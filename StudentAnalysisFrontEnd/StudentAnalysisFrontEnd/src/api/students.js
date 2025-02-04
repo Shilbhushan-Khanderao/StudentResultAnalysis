@@ -1,6 +1,13 @@
 import axios from './axios';
 const BASEURI = "http://localhost:8080/api"
 
+// Upload students via CSV
+export const uploadStudents = async (formData) => {
+    await axios.post(`${BASEURI}/students/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+    });
+};
+
 export const getStudents = async () => {
     const response = await axios.get(`${BASEURI}/students`);
     return response.data;

@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Optional;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -38,7 +39,13 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     public void saveUser(String username, String password, String roleName) {
-        Role role = roleRepository.findByName(roleName).orElseThrow(() -> new RuntimeException("Role not found"));
+    	Optional<Role> optionalRole = roleRepository.findByName(roleName);
+    	
+    	if (optionalRole.isEmpty()) {
+            throw new RuntimeException("Role not found: " + roleName);
+        }
+
+        Role role = optionalRole.get();
         User user = User.builder()
                 .username(username)
                 .password(password)
