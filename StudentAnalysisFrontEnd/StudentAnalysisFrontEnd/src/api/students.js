@@ -3,9 +3,14 @@ const BASEURI = "http://localhost:8080/api"
 
 // Upload students via CSV
 export const uploadStudents = async (formData) => {
-    await axios.post(`${BASEURI}/students/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-    });
+    try {
+        const response = await axios.post(`${BASEURI}/students/upload`, formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        return response.data;  
+    } catch (error) {
+        throw error;
+    }
 };
 
 export const getStudents = async () => {

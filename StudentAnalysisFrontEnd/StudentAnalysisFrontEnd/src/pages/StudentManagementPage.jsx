@@ -11,10 +11,6 @@ const StudentManagementPage = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
   const fetchStudents = async () => {
     try {
       const data = await getStudents();
@@ -23,6 +19,12 @@ const StudentManagementPage = () => {
       setError("Failed to fetch students.");
     }
   };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this student?"))
@@ -47,7 +49,7 @@ const StudentManagementPage = () => {
         </Link>
       </div>
 
-      <StudentForm refreshStudents={fetchStudents} student={selectedStudent} />
+      <StudentForm refreshStudents={() => fetchStudents()} student={selectedStudent} />
 
       <Table
         columns={[

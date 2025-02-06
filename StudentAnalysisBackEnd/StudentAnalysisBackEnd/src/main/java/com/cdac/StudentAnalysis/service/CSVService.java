@@ -30,13 +30,13 @@ public class CSVService {
             Batch batch = batchRepository.findByBatchName(batchName)
                     .orElseGet(() -> batchRepository.save(Batch.builder().batchName(batchName).build()));
 
-            String line;
+            String line = reader.readLine();
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split(",");
 
                 Student student = Student.builder()
-                        .name(data[0])
-                        .rollNumber(data[1])
+                        .name(data[1])
+                        .rollNumber(data[0])
                         .batch(batch)
                         .build();
 
