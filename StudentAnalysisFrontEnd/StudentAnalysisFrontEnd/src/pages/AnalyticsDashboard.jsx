@@ -42,6 +42,7 @@ const AnalyticsDashboard = () => {
   return (
     <div className="container mt-5">
       <h2>Analytics Dashboard</h2>
+
       {/* Batch Performance */}
       <div className="mb-5">
         <h4>Batch-Wise Performance</h4>
@@ -65,18 +66,25 @@ const AnalyticsDashboard = () => {
           />
         )}
       </div>
+
       {/* Top Performers */}
       <div className="mb-5">
         <h4>Top Performers</h4>
         <Table
           columns={[
-            { header: "Rank", accessor: "rank" },
-            { header: "Name", accessor: "student.name" },
-            { header: "Percentage", accessor: "percentage" },
+            { field: "rank", headerName: "Rank", width: 100 },
+            { field: "name", headerName: "Student Name", width: 250 },
+            { field: "percentage", headerName: "Percentage", width: 150 },
           ]}
-          data={topPerformers}
+          rows={topPerformers.map((performer, index) => ({
+            id: index + 1,
+            rank: performer.rank,
+            name: performer.student.name,
+            percentage: performer.percentage,
+          }))}
         />
       </div>
+
       {/* Subject-Wise Averages */}
       <div className="mb-5">
         <h4>Subject-Wise Averages</h4>

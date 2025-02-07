@@ -1,26 +1,25 @@
-import axios from './axios';
-const BASEURI = "http://localhost:8080/api"
+import axios from "./axios";
 
 export const getSubjects = async () => {
-    const response = await axios.get(`${BASEURI}/subjects`);
-    return response.data;
+  const response = await axios.get(`/subjects`);
+  return response.data;
 };
 
 export const getSubjectById = async (id) => {
-    const response = await axios.get(`${BASEURI}/subjects/${id}`);
-    return response.data;
+  const response = await axios.get(`/subjects/${id}`);
+  return response.data;
 };
 
 export const createSubject = async (subjectData) => {
-    const response = await axios.post(`${BASEURI}/subjects`, subjectData);
-    return response.data;
+  const response = await axios.post(`/subjects`, subjectData);
+  return response.data;
 };
 
 export const updateSubject = async (id, subjectData) => {
-    const response = await axios.put(`${BASEURI}/subjects/${id}`, subjectData);
-    return response.data;
+  const response = await axios.put(`/subjects/${id}`, subjectData);
+  return response.data;
 };
 
 export const deleteSubject = async (id) => {
-    await axios.delete(`${BASEURI}/subjects/${id}`);
+  await axios.delete(`/subjects/${id}`);
 };

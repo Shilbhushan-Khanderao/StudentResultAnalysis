@@ -1,15 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { getStudents, deleteStudent } from "../api/students";
 import StudentForm from "../components/StudentForm";
 import Table from "../components/Table";
 import Alert from "../components/Alert";
+import ModalDialog from "../components/ModalDialog";
+import { Button } from "@mui/material";
 
 const StudentManagementPage = () => {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
 
   const fetchStudents = async () => {
     try {
@@ -19,12 +26,6 @@ const StudentManagementPage = () => {
       setError("Failed to fetch students.");
     }
   };
-
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this student?"))
@@ -38,47 +39,95 @@ const StudentManagementPage = () => {
     }
   };
 
+  const handleEditClick = (student) => {
+    setSelectedStudent(student);
+    setOpenEditModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenEditModal(false);
+    setSelectedStudent(null);
+  };
+
+  const handleStudentUpdate = async () => {
+    await fetchStudents(); // Refresh student list
+    handleCloseModal(); // Automatically close modal on successful update
+  };
+
   return (
     <div className="container mt-5">
       <h2>Student Management</h2>
       {message && <Alert type="success" message={message} />}
       {error && <Alert type="error" message={error} />}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <Link to="/students/upload" className="btn btn-primary">
-          Upload Students
-        </Link>
-      </div>
 
-      <StudentForm refreshStudents={() => fetchStudents()} student={selectedStudent} />
+      {/* Add Student Button */}
+      <Button
+        variant="contained"
+        color="primary"
+        className="mb-2"
+        onClick={() => setShowAddForm(!showAddForm)}
+      >
+        {showAddForm ? "Hide Form" : "Add Student"}
+      </Button>
 
+      {/* Conditionally Render Student Form */}
+      {showAddForm && <StudentForm refreshStudents={fetchStudents} />}
+
+      {/* Students Table */}
       <Table
         columns={[
-          { header: "ID", accessor: "id" },
-          { header: "Name", accessor: "name" },
-          { header: "Roll Number", accessor: "rollNumber" },
-          { header: "Batch", accessor: "batch.batchName" },
-          { header: "Actions", accessor: "actions" },
+          { field: "id", headerName: "ID", width: 90 },
+          { field: "rollNumber", headerName: "Roll Number", width: 150 },
+          { field: "name", headerName: "Name", width: 250 },
+          { field: "batchName", headerName: "Batch", width: 200 },
+          {
+            field: "actions",
+            headerName: "Actions",
+            width: 250,
+            renderCell: (params) => (
+              <>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  size="small"
+                  onClick={() => handleEditClick(params.row)}
+                  style={{ marginRight: "8px" }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="small"
+                  onClick={() => handleDelete(params.row.id)}
+                >
+                  Delete
+                </Button>
+              </>
+            ),
+          },
         ]}
-        data={students.map((student) => ({
-          ...student,
-          actions: (
-            <>
-              <button
-                className="btn btn-warning me-2"
-                onClick={() => setSelectedStudent(student)}
-              >
-                Edit
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={() => handleDelete(student.id)}
-              >
-                Delete
-              </button>
-            </>
-          ),
+        rows={students.map((student) => ({
+          id: student.id,
+          rollNumber: student.rollNumber,
+          name: student.name,
+          batchName: student.batch?.batchName || "N/A",
         }))}
       />
+
+      {/* Reusable Modal for Editing Student */}
+      <ModalDialog
+        open={openEditModal}
+        handleClose={handleCloseModal}
+        title="Edit Student"
+      >
+        {selectedStudent && (
+          <StudentForm
+            student={selectedStudent}
+            refreshStudents={handleStudentUpdate}
+          />
+        )}
+      </ModalDialog>
     </div>
   );
 };
