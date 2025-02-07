@@ -3,12 +3,16 @@ import { getSubjects, deleteSubject } from "../api/subjects";
 import SubjectForm from "../components/SubjectForm";
 import Table from "../components/Table";
 import Alert from "../components/Alert";
+import ModalDialog from "../components/ModalDialog";
+import { Button } from "@mui/material";
 
 const SubjectManagementPage = () => {
   const [subjects, setSubjects] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     fetchSubjects();
@@ -35,41 +39,89 @@ const SubjectManagementPage = () => {
     }
   };
 
+  const handleEditClick = (subject) => {
+    setSelectedSubject(subject);
+    setOpenEditModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenEditModal(false);
+    setSelectedSubject(null);
+  };
+
+  const handleSubjectUpdate = async () => {
+    await fetchSubjects();
+    handleCloseModal();
+  };
+
   return (
     <div className="container mt-5">
       <h2>Subject Management</h2>
       {message && <Alert type="success" message={message} />}
       {error && <Alert type="error" message={error} />}
-      
-      <SubjectForm refreshSubjects={fetchSubjects} subject={selectedSubject} />
+
+      <Button
+        variant="contained"
+        color="primary"
+        className="mb-2"
+        onClick={() => setShowAddForm(!showAddForm)}
+      >
+        {showAddForm ? "Hide Form" : "Add Subject"}
+      </Button>
+
+      {showAddForm && <SubjectForm refreshSubjects={fetchSubjects} />}
 
       <Table
         columns={[
-          { header: "ID", accessor: "id" },
-          { header: "Subject Name", accessor: "name" },
-          { header: "Type", accessor: "type" },
-          { header: "Actions", accessor: "actions" },
+          { field: "id", headerName: "ID", width: 90 },
+          { field: "name", headerName: "Subject Name", width: 250 },
+          { field: "type", headerName: "Type", width: 200 },
+          {
+            field: "actions",
+            headerName: "Actions",
+            width: 250,
+            renderCell: (params) => (
+              <>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  size="small"
+                  onClick={() => handleEditClick(params.row)}
+                  style={{ marginRight: "8px" }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="small"
+                  onClick={() => handleDelete(params.row.id)}
+                >
+                  Delete
+                </Button>
+              </>
+            ),
+          },
         ]}
-        data={subjects.map((subject) => ({
-          ...subject,
-          actions: (
-            <>
-              <button
-                className="btn btn-warning me-2"
-                onClick={() => setSelectedSubject(subject)}
-              >
-                Edit
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={() => handleDelete(subject.id)}
-              >
-                Delete
-              </button>
-            </>
-          ),
+        rows={subjects.map((subject) => ({
+          id: subject.id,
+          name: subject.name,
+          type: subject.type,
         }))}
       />
+
+      <ModalDialog
+        open={openEditModal}
+        handleClose={handleCloseModal}
+        title="Edit Subject"
+      >
+        {selectedSubject && (
+          <SubjectForm
+            subject={selectedSubject}
+            refreshSubjects={handleSubjectUpdate}
+          />
+        )}
+      </ModalDialog>
     </div>
   );
 };

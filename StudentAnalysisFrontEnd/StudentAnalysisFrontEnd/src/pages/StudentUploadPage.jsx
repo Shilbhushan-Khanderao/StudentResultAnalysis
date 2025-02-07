@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { uploadStudents } from "../api/students";
 import Alert from "../components/Alert";
+import { useNavigate } from "react-router-dom";
 
-const StudentUploadPage = ({ refreshStudents }) => {
+const StudentUploadPage = () => {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [batchName, setBatchName] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-
-  console.log("refreshStudents:", refreshStudents);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -17,8 +17,8 @@ const StudentUploadPage = ({ refreshStudents }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file || !batchName) {
-        setError("Please select a file and enter a batch name.");
-        return;
+      setError("Please select a file and enter a batch name.");
+      return;
     }
 
     const formData = new FormData();
@@ -26,32 +26,15 @@ const StudentUploadPage = ({ refreshStudents }) => {
     formData.append("batchName", batchName);
 
     try {
-        const response = await uploadStudents(formData);
-        console.log("Upload Response:", response);  // Debugging Response
-        if (response.message && response.message.includes("successfully")) {
-            setMessage(response.message);
-            setError("");  // Clear error message
-        } else {
-            setError("Unexpected response from server.");
-        }
-        setFile(null);
-        setBatchName("");
-        if (typeof refreshStudents === "function") {
-          refreshStudents();
-        } else {
-          console.error("refreshStudents is not a function:", refreshStudents);
-        }
-    } catch (err) {
-        console.error("Error uploading students:", err);
-        if (err.response) {
-            console.error("Server Response:", err.response.data);
-            setError(err.response.data.message || "Failed to upload students.");
-        } else {
-            setError("Failed to upload students.");
-        }
-    }
-};
+      await uploadStudents(formData);
+      setMessage("Students uploaded successfully.");
 
+      setTimeout(() => navigate("/students"), 2000);
+    } catch (err) {
+      console.error("Error uploading students:", err);
+      setError("Failed to upload students.");
+    }
+  };
 
   return (
     <div className="container mt-4">

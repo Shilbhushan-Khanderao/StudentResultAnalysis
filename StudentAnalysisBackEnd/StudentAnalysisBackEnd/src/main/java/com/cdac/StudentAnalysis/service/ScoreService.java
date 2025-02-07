@@ -30,7 +30,7 @@ public class ScoreService {
     // Method 1: Upload marks for a single subject
     public void importSingleSubjectMarks(MultipartFile file, String subjectName) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            String line;
+            String line = reader.readLine();
             Subject subject = (Subject) subjectRepository.findByName(subjectName)
                     .orElseThrow(() -> new RuntimeException("Subject not found: " + subjectName));
 
