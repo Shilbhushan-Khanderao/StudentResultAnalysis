@@ -1,21 +1,22 @@
 package com.cdac.StudentAnalysis.service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.stereotype.Service;
-
 import com.cdac.StudentAnalysis.model.Ranking;
 import com.cdac.StudentAnalysis.model.RankingHistory;
 import com.cdac.StudentAnalysis.model.Score;
 import com.cdac.StudentAnalysis.model.Student;
-import com.cdac.StudentAnalysis.model.Subject;
 import com.cdac.StudentAnalysis.repository.RankingHistoryRepository;
 import com.cdac.StudentAnalysis.repository.RankingRepository;
 import com.cdac.StudentAnalysis.repository.ScoreRepository;
 import com.cdac.StudentAnalysis.repository.StudentRepository;
-import com.cdac.StudentAnalysis.repository.SubjectRepository;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 public class RankingService {
@@ -31,115 +32,109 @@ public class RankingService {
         this.scoreRepository = scoreRepository;
         this.rankingHistoryRepository = rankingHistoryRepository;
     }
-    
-    // Get all rankings
+
+    @Transactional
+    public void calculateRanks() {
+        List<Student> students = studentRepository.findAll();
+        List<Ranking> updatedRankings = new ArrayList<>();
+        List<RankingHistory> rankingHistories = new ArrayList<>();
+
+        Map<Student, Integer> marksMap = new HashMap<>();
+        boolean hasTheoryMarks = false;
+
+        // Step 1: Check if TH marks exist and compute total marks accordingly
+        for (Student student : students) {
+            List<Score> scores = scoreRepository.findByStudent(student);
+            int totalMarks = 0;
+
+            for (Score score : scores) {
+                totalMarks += score.getIaMarks() + score.getLabMarks();
+                if (score.getTheoryMarks() > 0) { // Check if TH marks exist for any student
+                    totalMarks += score.getTheoryMarks();
+                    hasTheoryMarks = true;
+                }
+            }
+            marksMap.put(student, totalMarks);
+        }
+
+        // Step 2: Rank Students based on available marks (TH+IA+LAB or IA+LAB)
+        rankStudents(marksMap, updatedRankings, rankingHistories, hasTheoryMarks);
+
+        // Step 3: Bulk save rankings & ranking history
+        rankingRepository.saveAll(updatedRankings);
+        rankingHistoryRepository.saveAll(rankingHistories);
+    }
+
+    private void rankStudents(Map<Student, Integer> marksMap, List<Ranking> rankings, List<RankingHistory> histories, boolean hasTheoryMarks) {
+        List<Map.Entry<Student, Integer>> sortedStudents = marksMap.entrySet().stream()
+                .sorted(Map.Entry.<Student, Integer>comparingByValue().reversed())
+                .toList();
+
+        int rank = 1;
+        int lastMarks = -1;
+        int lastRank = 0;
+        int maxMarks = hasTheoryMarks ? 100 : 60; // If TH marks exist, max is 100, otherwise 60
+
+        for (Map.Entry<Student, Integer> entry : sortedStudents) {
+            Student student = entry.getKey();
+            int totalMarks = entry.getValue();
+
+            // Handle ties (same marks → same rank)
+            if (totalMarks == lastMarks) {
+                rank = lastRank;
+            } else {
+                lastRank = rank;
+            }
+            lastMarks = totalMarks;
+
+            Ranking ranking = rankingRepository.findByStudent(student).orElse(new Ranking());
+            ranking.setStudent(student);
+            int previousRank = ranking.getCurrentRank();
+            ranking.setCurrentRank(rank++);
+            ranking.setPercentage((totalMarks * 100.0) / maxMarks); // Adjust percentage based on marks type
+
+            rankings.add(ranking);
+
+            // 🟢 Only save history if the rank changed
+            if (previousRank != ranking.getCurrentRank()) {
+                histories.add(RankingHistory.builder()
+                        .student(student)
+                        .ranking(ranking)
+                        .oldRank(previousRank)
+                        .newRank(ranking.getCurrentRank())
+                        .timestamp(LocalDateTime.now())
+                        .build());
+            }
+        }
+    }
+
     public List<Ranking> getAllRankings() {
         return rankingRepository.findAll();
     }
 
-    // Get a student's ranking
     public Ranking getStudentRanking(Long studentId) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found with ID: " + studentId));
-        return rankingRepository.findByStudent(student)
-                .orElseThrow(() -> new RuntimeException("Ranking not found for student ID: " + studentId));
+        return rankingRepository.findByStudent(
+                studentRepository.findById(studentId)
+                        .orElseThrow(() -> new RuntimeException("Student not found"))
+        ).orElseThrow(() -> new RuntimeException("Ranking not found"));
+    }
+
+    public List<RankingHistory> getRankingHistory(Long studentId) {
+        return rankingHistoryRepository.findAll();
     }
     
-    // Calculate and update rankings for all students
-    public void calculateRanks() {
-        List<Student> students = studentRepository.findAll();
-        Map<Student, Integer> iaLabMarksMap = new HashMap<>();
-        Map<Student, Integer> thIaLabMarksMap = new HashMap<>();
-
-        // Step 1: Compute IA+LAB and TH+IA+LAB total marks
-        for (Student student : students) {
-            List<Score> scores = scoreRepository.findByStudent(student);
-
-            int iaLabMarks = 0;
-            int thIaLabMarks = 0;
-
-            for (Score score : scores) {
-                Subject subject = score.getSubject();
-                int theoryMarks = score.getTheoryMarks();
-                int iaMarks = score.getIaMarks();
-                int labMarks = score.getLabMarks();
-
-                // 🟢 Check if the subject is "Combined" using some identifier (adjust as per your DB)
-                boolean isCombined = subject.getName().toLowerCase().contains("combined");
-
-                // ✅ Calculate IA+LAB total (Max: 60 for regular, 30 for combined)
-                iaLabMarks += (isCombined ? (iaMarks + labMarks) : (iaMarks + labMarks));
-
-                // ✅ Calculate TH+IA+LAB total (Max: 100 for both types)
-                if (theoryMarks > 0) {
-                    thIaLabMarks += (theoryMarks + iaMarks + labMarks);
-                }
-            }
-
-            iaLabMarksMap.put(student, iaLabMarks);
-            thIaLabMarksMap.put(student, thIaLabMarks);
-        }
-
-        // Step 2: Sort students based on IA+LAB and TH+IA+LAB marks
-        List<Map.Entry<Student, Integer>> sortedIALabStudents = iaLabMarksMap.entrySet().stream()
-                .sorted(Map.Entry.<Student, Integer>comparingByValue().reversed())
-                .toList();
-
-        List<Map.Entry<Student, Integer>> sortedTHIALabStudents = thIaLabMarksMap.entrySet().stream()
-                .sorted(Map.Entry.<Student, Integer>comparingByValue().reversed())
-                .toList();
-
-        int iaLabRank = 1;
-        int thIaLabRank = 1;
-        
-        int maxIALabMarks = 60 * students.size();
-        int maxTHIALabMarks = 100 * students.size();
-
-        for (Map.Entry<Student, Integer> entry : sortedIALabStudents) {
-            Student student = entry.getKey();
-            int totalMarks = entry.getValue();
-
-            Ranking ranking = rankingRepository.findByStudent(student).orElse(new Ranking());
-            ranking.setStudent(student);
-            ranking.setOldRank(ranking.getCurrentRank());
-            ranking.setCurrentRank(iaLabRank++);
-            ranking.setPercentage((totalMarks * 100.0) / maxIALabMarks);
-
-            rankingRepository.save(ranking);
-
-            RankingHistory rankingHistory = RankingHistory.builder()
-                    .student(student)
-                    .rankType("IA_LAB")
-                    .oldRank(ranking.getOldRank())
-                    .currentRank(ranking.getCurrentRank())
-                    .percentage(ranking.getPercentage())
-                    .build();
-
-            rankingHistoryRepository.save(rankingHistory);
-        }
-
-        for (Map.Entry<Student, Integer> entry : sortedTHIALabStudents) {
-            Student student = entry.getKey();
-            int totalMarks = entry.getValue();
-
-            Ranking ranking = rankingRepository.findByStudent(student).orElse(new Ranking());
-            ranking.setStudent(student);
-            ranking.setOldRank(ranking.getCurrentRank());
-            ranking.setCurrentRank(thIaLabRank++);
-            ranking.setPercentage((totalMarks * 100.0) / maxTHIALabMarks);
-
-            rankingRepository.save(ranking);
-
-            RankingHistory rankingHistory = RankingHistory.builder()
-                    .student(student)
-                    .rankType("TH_IA_LAB")
-                    .oldRank(ranking.getOldRank())
-                    .currentRank(ranking.getCurrentRank())
-                    .percentage(ranking.getPercentage())
-                    .build();
-
-            rankingHistoryRepository.save(rankingHistory);
-        }
+    public List<Ranking> getTopRankers(int limit) {
+        Pageable pageable = PageRequest.of(0, limit, Sort.by("currentRank").ascending());
+        return rankingRepository.findTopRankers(pageable);
     }
-}
+    
+    public List<Ranking> getBatchRankings(Long batchId) {
+        return rankingRepository.findRankingsByBatch(batchId);
+    }
 
+    public List<RankingHistory> getRankComparison(Long studentId) {
+        return rankingHistoryRepository.findRankHistoryByStudent(studentId);
+    }
+
+
+}

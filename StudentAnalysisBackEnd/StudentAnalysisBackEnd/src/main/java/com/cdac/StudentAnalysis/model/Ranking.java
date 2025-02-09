@@ -15,10 +15,9 @@ public class Ranking {
     private Long id;
 
     @OneToOne
-    @JoinColumn(name = "student_id")
+    @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    private int currentRank;
-    private int oldRank;
-    private double percentage;
+    private int currentRank; // Latest rank
+    private double percentage; // Latest percentage
 }

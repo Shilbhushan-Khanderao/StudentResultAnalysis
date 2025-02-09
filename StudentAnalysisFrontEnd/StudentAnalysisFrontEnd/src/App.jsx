@@ -18,6 +18,7 @@ import StudentManagementPage from "./pages/StudentManagementPage";
 import BatchManagementPage from "./pages/BatchManagementPage";
 import SubjectManagementPage from "./pages/SubjectManagementPage";
 import RankingPage from "./pages/RankingPage";
+import MarksheetPage from "./pages/MarksheetPage";
 import Navbar from "./components/Navbar";
 
 const App = () => {
@@ -53,6 +54,7 @@ const App = () => {
             <Route path="/marks/update" element={<MarksUpdatePage />} />
             <Route path="/trends/student" element={<StudentTrendPage />} />
             <Route path="/trends/subject" element={<SubjectTrendPage />} />
+            <Route path="/marksheet" element={<MarksheetPage />} />
           </Route>
         </Routes>
       </div>

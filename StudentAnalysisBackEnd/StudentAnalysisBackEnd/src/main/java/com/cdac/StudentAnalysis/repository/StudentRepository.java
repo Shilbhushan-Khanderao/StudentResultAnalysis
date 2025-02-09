@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
-    Optional<Object> findByRollNumber(String rollNumber);
+    Optional<Student> findByRollNumber(String rollNumber);
     List<Student> findByBatchId(Long batchId);
 }

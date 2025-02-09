@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.cdac.StudentAnalysis.model.Subject;
 
 public interface SubjectRepository extends JpaRepository<Subject, Long> {
-    Optional<Object> findByName(String subjectName);
+    Optional<Subject> findByName(String subjectName);
 }

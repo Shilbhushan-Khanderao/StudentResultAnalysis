@@ -1,5 +1,16 @@
 import axios from './axios';
 
+// Fetch Marksheet data
+export const fetchMarksheet = async () => {
+    try {
+        const response = await axios.get('/marks/marksheet');
+        return response.data.data;
+    } catch (error) {
+        console.error("Error fetching marksheet data", error);
+        return [];
+    }
+};
+
 // Upload single subject marks
 export const uploadSingleSubjectMarks = async (file, subjectName) => {
     const formData = new FormData();

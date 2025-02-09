@@ -1,10 +1,8 @@
 import React, { useState } from "react";
 import { uploadStudents } from "../api/students";
 import Alert from "../components/Alert";
-import { useNavigate } from "react-router-dom";
 
-const StudentUploadPage = () => {
-  const navigate = useNavigate();
+const StudentUploadPage = ({ refreshStudents, handleClose }) => {
   const [file, setFile] = useState(null);
   const [batchName, setBatchName] = useState("");
   const [message, setMessage] = useState("");
@@ -29,7 +27,14 @@ const StudentUploadPage = () => {
       await uploadStudents(formData);
       setMessage("Students uploaded successfully.");
 
-      setTimeout(() => navigate("/students"), 2000);
+      // Refresh student list on successful upload
+      refreshStudents();
+
+      // Close the modal after a short delay
+      setTimeout(() => {
+        setMessage("");
+        handleClose(); // Close modal after success
+      }, 1500);
     } catch (err) {
       console.error("Error uploading students:", err);
       setError("Failed to upload students.");
@@ -37,10 +42,10 @@ const StudentUploadPage = () => {
   };
 
   return (
-    <div className="container mt-4">
-      <h2>Upload Students Data</h2>
+    <div>
       {message && <Alert type="success" message={message} />}
       {error && <Alert type="error" message={error} />}
+      
       <form onSubmit={handleSubmit}>
         <div className="form-group mb-3">
           <label>Batch Name</label>

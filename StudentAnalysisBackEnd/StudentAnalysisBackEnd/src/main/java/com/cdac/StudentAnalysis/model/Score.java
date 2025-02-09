@@ -9,15 +9,16 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Score {
-    @Id
+    
+	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id")
     private Student student;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id")
     private Subject subject;
 
@@ -25,12 +26,10 @@ public class Score {
     private int iaMarks;
     private int labMarks;
     private int totalMarks;
-
+    
     public Score(Student student, Subject subject) {
-    }
-
-	public Student getStudent() {
-		// TODO Auto-generated method stub
-		return null;
+		this.student = student;
+		this.subject = subject;
 	}
+
 }

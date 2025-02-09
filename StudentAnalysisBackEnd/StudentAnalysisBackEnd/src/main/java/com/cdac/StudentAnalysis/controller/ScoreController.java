@@ -1,6 +1,12 @@
 package com.cdac.StudentAnalysis.controller;
 
+import com.cdac.StudentAnalysis.dto.ApiResponse;
+import com.cdac.StudentAnalysis.model.Score;
 import com.cdac.StudentAnalysis.service.ScoreService;
+
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,37 +20,64 @@ public class ScoreController {
     public ScoreController(ScoreService scoreService) {
         this.scoreService = scoreService;
     }
+    
+    
+    //Fetch all scores for all students and subjects.
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse> getAllScores() {
+        List<Score> scores = scoreService.getAllScores();
+        return ResponseEntity.ok(new ApiResponse("All scores retrieved successfully", scores));
+    }
+    
+    //Fetch Marksheet Data
+    @GetMapping("/marksheet")
+    public ResponseEntity<ApiResponse> getMarksheet() {
+        List<Map<String, Object>> marksheet = scoreService.getFormattedMarksheet();
+        return ResponseEntity.ok(new ApiResponse("Marksheet data retrieved successfully", marksheet));
+    }
 
-    // API for single subject upload
+    
+    //Fetch all scores for a specific student by roll number.
+    @GetMapping("/student/{rollNumber}")
+    public ResponseEntity<ApiResponse> getScoresByStudent(@PathVariable String rollNumber) {
+        List<Score> scores = scoreService.getScoresByStudentRollNumber(rollNumber);
+        return ResponseEntity.ok(new ApiResponse("Scores retrieved successfully", scores));
+    }
+
+    
+    //Fetch all scores for a specific subject.
+    @GetMapping("/subject/{subjectName}")
+    public ResponseEntity<ApiResponse> getScoresBySubject(@PathVariable String subjectName) {
+        List<Score> scores = scoreService.getScoresBySubjectName(subjectName);
+        return ResponseEntity.ok(new ApiResponse("Scores retrieved successfully", scores));
+    }
+
     @PostMapping("/upload/single")
-    public ResponseEntity<String> uploadSingleSubjectMarks(@RequestParam("file") MultipartFile file,
-                                                           @RequestParam("subjectName") String subjectName) {
+    public ResponseEntity<ApiResponse> uploadSingleSubjectMarks(@RequestParam("file") MultipartFile file,
+                                                                @RequestParam("subjectName") String subjectName) {
         scoreService.importSingleSubjectMarks(file, subjectName);
-        return ResponseEntity.ok("Single subject marks uploaded successfully for: " + subjectName);
+        return ResponseEntity.ok(new ApiResponse("Single subject marks uploaded successfully", subjectName));
     }
 
-    // API for multiple subjects upload
     @PostMapping("/upload/multiple")
-    public ResponseEntity<String> uploadMultiSubjectMarks(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ApiResponse> uploadMultiSubjectMarks(@RequestParam("file") MultipartFile file) {
         scoreService.importMultiSubjectMarks(file);
-        return ResponseEntity.ok("Multiple subjects marks uploaded successfully.");
+        return ResponseEntity.ok(new ApiResponse("Multiple subjects marks uploaded successfully", null));
     }
 
-    // API for updating a single student's marks
     @PutMapping("/update/single")
-    public ResponseEntity<String> updateSingleStudentMarks(@RequestParam String rollNumber,
-                                                           @RequestParam String subjectName,
-                                                           @RequestParam int theoryMarks,
-                                                           @RequestParam int iaMarks,
-                                                           @RequestParam int labMarks) {
+    public ResponseEntity<ApiResponse> updateSingleStudentMarks(@RequestParam String rollNumber,
+                                                                @RequestParam String subjectName,
+                                                                @RequestParam int theoryMarks,
+                                                                @RequestParam int iaMarks,
+                                                                @RequestParam int labMarks) {
         scoreService.updateSingleStudentMarks(rollNumber, subjectName, theoryMarks, iaMarks, labMarks);
-        return ResponseEntity.ok("Marks updated successfully for student: " + rollNumber);
+        return ResponseEntity.ok(new ApiResponse("Marks updated successfully", rollNumber));
     }
 
     @PutMapping("/update/multiple")
-    public ResponseEntity<String> updateMarksFromCSV(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ApiResponse> updateMarksFromCSV(@RequestParam("file") MultipartFile file) {
         scoreService.updateMarksFromCSV(file);
-        return ResponseEntity.ok("Bulk marks updated successfully.");
+        return ResponseEntity.ok(new ApiResponse("Bulk marks updated successfully", null));
     }
 }
-

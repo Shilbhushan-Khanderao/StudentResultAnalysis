@@ -2,6 +2,7 @@ package com.cdac.StudentAnalysis.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -15,11 +16,20 @@ public class RankingHistory {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "student_id")
+    @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    private String rankType; // "IA_LAB" or "TH_IA_LAB"
-    private int oldRank;
-    private int currentRank;
-    private double percentage;
+    @ManyToOne
+    @JoinColumn(name = "ranking_id", nullable = false)
+    private Ranking ranking;
+
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int oldRank = 0;
+
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int newRank = 0;
+
+    @Column(nullable = false)
+    private LocalDateTime timestamp;
 }
+

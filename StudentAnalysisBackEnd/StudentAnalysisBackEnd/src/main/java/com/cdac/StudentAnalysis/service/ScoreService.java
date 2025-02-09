@@ -1,12 +1,7 @@
 package com.cdac.StudentAnalysis.service;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
+import com.cdac.StudentAnalysis.exception.StudentNotFoundException;
+import com.cdac.StudentAnalysis.exception.SubjectNotFoundException;
 import com.cdac.StudentAnalysis.model.Score;
 import com.cdac.StudentAnalysis.model.Student;
 import com.cdac.StudentAnalysis.model.Subject;
@@ -14,8 +9,24 @@ import com.cdac.StudentAnalysis.repository.ScoreRepository;
 import com.cdac.StudentAnalysis.repository.StudentRepository;
 import com.cdac.StudentAnalysis.repository.SubjectRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 @Service
 public class ScoreService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ScoreService.class);
 
     private final ScoreRepository scoreRepository;
     private final StudentRepository studentRepository;
@@ -26,88 +37,164 @@ public class ScoreService {
         this.studentRepository = studentRepository;
         this.subjectRepository = subjectRepository;
     }
+    
+    /**
+     * Fetch all scores for all students and subjects.
+     */
+    @Transactional(readOnly = true)
+    public List<Score> getAllScores() {
+        logger.info("Fetching all scores...");
+        return scoreRepository.findAll();
+    }
+    
+    //Get Marksheet for all students
+    public List<Map<String, Object>> getFormattedMarksheet() {
+        List<Score> scores = scoreRepository.findAll();
+        
+        Map<String, Map<String, Object>> studentMap = new LinkedHashMap<>();
 
-    // Method 1: Upload marks for a single subject
+        for (Score score : scores) {
+            String studentId = score.getStudent().getRollNumber();
+            String studentName = score.getStudent().getName();
+            String subject = score.getSubject().getName();
+            
+            studentMap.putIfAbsent(studentId, new LinkedHashMap<>());
+            Map<String, Object> studentData = studentMap.get(studentId);
+
+            studentData.put("Student ID", studentId);
+            studentData.put("Student Name", studentName);
+            studentData.put(subject, Map.of(
+                "TH", score.getTheoryMarks(),
+                "IA", score.getIaMarks(),
+                "Lab", score.getLabMarks(),
+                "TOT", score.getTheoryMarks() + score.getIaMarks() + score.getLabMarks()
+            ));
+        }
+
+        return new ArrayList<>(studentMap.values());
+    }
+    
+    /**
+     * Fetch all scores for a given student roll number.
+     */
+    @Transactional(readOnly = true)
+    public List<Score> getScoresByStudentRollNumber(String rollNumber) {
+        Student student = studentRepository.findByRollNumber(rollNumber)
+                .orElseThrow(() -> new StudentNotFoundException(rollNumber));
+        
+        return scoreRepository.findByStudent(student);
+    }
+
+    /**
+     * Fetch all scores for a given subject.
+     */
+    @Transactional(readOnly = true)
+    public List<Score> getScoresBySubjectName(String subjectName) {
+        Subject subject = subjectRepository.findByName(subjectName)
+                .orElseThrow(() -> new SubjectNotFoundException(subjectName));
+
+        return scoreRepository.findBySubject(subject);
+    }
+
+    /**
+     * Upload marks for a single subject from a CSV file.
+     */
+    @Transactional
     public void importSingleSubjectMarks(MultipartFile file, String subjectName) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            String line = reader.readLine();
-            Subject subject = (Subject) subjectRepository.findByName(subjectName)
-                    .orElseThrow(() -> new RuntimeException("Subject not found: " + subjectName));
+            logger.info("Processing file for subject: {}", subjectName);
+            Subject subject = subjectRepository.findByName(subjectName)
+                    .orElseThrow(() -> new SubjectNotFoundException(subjectName));
 
+            List<Score> scores = new ArrayList<>();
+            String line = reader.readLine();
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split(",");
+                if (data.length < 4) continue; // Skip invalid rows
+
                 String rollNumber = data[0];
                 int theoryMarks = Integer.parseInt(data[1]);
                 int iaMarks = Integer.parseInt(data[2]);
                 int labMarks = Integer.parseInt(data[3]);
 
-                Student student = (Student) studentRepository.findByRollNumber(rollNumber)
-                        .orElseThrow(() -> new RuntimeException("Student not found with roll number: " + rollNumber));
+                Student student = studentRepository.findByRollNumber(rollNumber)
+                        .orElseThrow(() -> new StudentNotFoundException(rollNumber));
 
-                int totalMarks = theoryMarks + iaMarks + labMarks;
                 Score score = Score.builder()
                         .student(student)
                         .subject(subject)
                         .theoryMarks(theoryMarks)
                         .iaMarks(iaMarks)
                         .labMarks(labMarks)
-                        .totalMarks(totalMarks)
                         .build();
 
-                scoreRepository.save(score);
+                scores.add(score);
             }
+            scoreRepository.saveAll(scores);
+            logger.info("Successfully uploaded marks for {}", subjectName);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error processing file: {}", e.getMessage(), e);
+            throw new RuntimeException("Error processing CSV file");
         }
     }
 
-    // Method 2: Upload marks for multiple subjects
+    /**
+     * Upload marks for multiple subjects from a CSV file.
+     */
+    @Transactional
     public void importMultiSubjectMarks(MultipartFile file) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
             String[] subjects = reader.readLine().split(",");
-            reader.readLine(); // Skip second row (TH, IA, Lab, Total headers)
+            reader.readLine(); // Skip headers row
             String line;
+            List<Score> scores = new ArrayList<>();
 
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split(",");
+                if (data.length < 4) continue; // Skip invalid rows
+
                 String rollNumber = data[0];
-                Student student = (Student) studentRepository.findByRollNumber(rollNumber)
-                        .orElseThrow(() -> new RuntimeException("Student not found with roll number: " + rollNumber));
+                Student student = studentRepository.findByRollNumber(rollNumber)
+                        .orElseThrow(() -> new StudentNotFoundException(rollNumber));
 
                 int index = 1;
                 for (String subjectName : subjects) {
-                    Subject subject = (Subject) subjectRepository.findByName(subjectName)
-                            .orElseThrow(() -> new RuntimeException("Subject not found: " + subjectName));
+                    Subject subject = subjectRepository.findByName(subjectName)
+                            .orElseThrow(() -> new SubjectNotFoundException(subjectName));
 
                     int theoryMarks = Integer.parseInt(data[index++]);
                     int iaMarks = Integer.parseInt(data[index++]);
                     int labMarks = Integer.parseInt(data[index++]);
 
-                    int totalMarks = theoryMarks + iaMarks + labMarks;
                     Score score = Score.builder()
                             .student(student)
                             .subject(subject)
                             .theoryMarks(theoryMarks)
                             .iaMarks(iaMarks)
                             .labMarks(labMarks)
-                            .totalMarks(totalMarks)
                             .build();
 
-                    scoreRepository.save(score);
+                    scores.add(score);
                 }
             }
+            scoreRepository.saveAll(scores);
+            logger.info("Successfully uploaded marks for multiple subjects.");
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error processing file: {}", e.getMessage(), e);
+            throw new RuntimeException("Error processing CSV file");
         }
     }
 
-    // Method 3: Update marks for a single student and subject
+    /**
+     * Update marks for a single student and subject.
+     */
+    @Transactional
     public void updateSingleStudentMarks(String rollNumber, String subjectName, int theoryMarks, int iaMarks, int labMarks) {
-        Student student = (Student) studentRepository.findByRollNumber(rollNumber)
-                .orElseThrow(() -> new RuntimeException("Student not found with roll number: " + rollNumber));
+        Student student = studentRepository.findByRollNumber(rollNumber)
+                .orElseThrow(() -> new StudentNotFoundException(rollNumber));
 
-        Subject subject = (Subject) subjectRepository.findByName(subjectName)
-                .orElseThrow(() -> new RuntimeException("Subject not found: " + subjectName));
+        Subject subject = subjectRepository.findByName(subjectName)
+                .orElseThrow(() -> new SubjectNotFoundException(subjectName));
 
         Score score = scoreRepository.findByStudentAndSubject(student, subject)
                 .orElse(new Score(student, subject));
@@ -115,28 +202,34 @@ public class ScoreService {
         score.setTheoryMarks(theoryMarks);
         score.setIaMarks(iaMarks);
         score.setLabMarks(labMarks);
-        score.setTotalMarks(theoryMarks + iaMarks + labMarks);
 
         scoreRepository.save(score);
+        logger.info("Updated marks for student {}", rollNumber);
     }
 
-    // Method 4: Bulk update marks for multiple students
+    /**
+     * Bulk update marks for multiple students from a CSV file.
+     */
+    @Transactional
     public void updateMarksFromCSV(MultipartFile file) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
             String[] subjects = reader.readLine().split(",");
-            reader.readLine(); // Skip second row (TH, IA, Lab headers)
+            reader.readLine(); // Skip headers row
             String line;
+            List<Score> scores = new ArrayList<>();
 
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split(",");
+                if (data.length < 4) continue; // Skip invalid rows
+
                 String rollNumber = data[0];
                 Student student = (Student) studentRepository.findByRollNumber(rollNumber)
-                        .orElseThrow(() -> new RuntimeException("Student not found with roll number: " + rollNumber));
+                        .orElseThrow(() -> new StudentNotFoundException(rollNumber));
 
                 int index = 1;
                 for (String subjectName : subjects) {
                     Subject subject = (Subject) subjectRepository.findByName(subjectName)
-                            .orElseThrow(() -> new RuntimeException("Subject not found: " + subjectName));
+                            .orElseThrow(() -> new SubjectNotFoundException(subjectName));
 
                     int theoryMarks = Integer.parseInt(data[index++]);
                     int iaMarks = Integer.parseInt(data[index++]);
@@ -148,14 +241,15 @@ public class ScoreService {
                     score.setTheoryMarks(theoryMarks);
                     score.setIaMarks(iaMarks);
                     score.setLabMarks(labMarks);
-                    score.setTotalMarks(theoryMarks + iaMarks + labMarks);
 
-                    scoreRepository.save(score);
+                    scores.add(score);
                 }
             }
+            scoreRepository.saveAll(scores);
+            logger.info("Successfully updated marks from CSV.");
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error processing file: {}", e.getMessage(), e);
+            throw new RuntimeException("Error processing CSV file");
         }
     }
 }
-

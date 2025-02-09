@@ -5,6 +5,7 @@ import Table from "../components/Table";
 import Alert from "../components/Alert";
 import ModalDialog from "../components/ModalDialog";
 import { Button } from "@mui/material";
+import StudentUploadPage from "./StudentUploadPage"; // Import the updated upload page
 
 const StudentManagementPage = () => {
   const [students, setStudents] = useState([]);
@@ -13,6 +14,7 @@ const StudentManagementPage = () => {
   const [error, setError] = useState("");
   const [openEditModal, setOpenEditModal] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [openUploadModal, setOpenUploadModal] = useState(false); // State for upload modal
 
   useEffect(() => {
     fetchStudents();
@@ -60,15 +62,24 @@ const StudentManagementPage = () => {
       {message && <Alert type="success" message={message} />}
       {error && <Alert type="error" message={error} />}
 
-      {/* Add Student Button */}
-      <Button
-        variant="contained"
-        color="primary"
-        className="mb-2"
-        onClick={() => setShowAddForm(!showAddForm)}
-      >
-        {showAddForm ? "Hide Form" : "Add Student"}
-      </Button>
+      {/* Add & Upload Buttons */}
+      <div className="mb-3">
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => setShowAddForm(!showAddForm)}
+          style={{ marginRight: "10px" }}
+        >
+          {showAddForm ? "Hide Form" : "Add Student"}
+        </Button>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={() => setOpenUploadModal(true)}
+        >
+          Upload Students
+        </Button>
+      </div>
 
       {/* Conditionally Render Student Form */}
       {showAddForm && <StudentForm refreshStudents={fetchStudents} />}
@@ -115,18 +126,20 @@ const StudentManagementPage = () => {
         }))}
       />
 
-      {/* Reusable Modal for Editing Student */}
-      <ModalDialog
-        open={openEditModal}
-        handleClose={handleCloseModal}
-        title="Edit Student"
-      >
+      {/* Edit Student Modal */}
+      <ModalDialog open={openEditModal} handleClose={handleCloseModal} title="Edit Student">
         {selectedStudent && (
-          <StudentForm
-            student={selectedStudent}
-            refreshStudents={handleStudentUpdate}
-          />
+          <StudentForm student={selectedStudent} refreshStudents={handleStudentUpdate} />
         )}
+      </ModalDialog>
+
+      {/* Upload Student Modal */}
+      <ModalDialog
+        open={openUploadModal}
+        handleClose={() => setOpenUploadModal(false)}
+        title="Upload Students"
+      >
+        <StudentUploadPage refreshStudents={fetchStudents} handleClose={() => setOpenUploadModal(false)} />
       </ModalDialog>
     </div>
   );
