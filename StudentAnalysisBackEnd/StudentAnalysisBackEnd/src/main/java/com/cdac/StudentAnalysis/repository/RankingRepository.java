@@ -19,5 +19,6 @@ public interface RankingRepository extends JpaRepository<Ranking, Long> {
     
     @Query("SELECT r FROM Ranking r WHERE r.student.batch.id = :batchId ORDER BY r.currentRank ASC")
     List<Ranking> findRankingsByBatch(@Param("batchId") Long batchId);
+    
 }
 

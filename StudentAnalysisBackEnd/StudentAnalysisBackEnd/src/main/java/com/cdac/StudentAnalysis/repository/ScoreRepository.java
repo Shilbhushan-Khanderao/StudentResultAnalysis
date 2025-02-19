@@ -30,4 +30,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     @Query("SELECT s FROM Score s WHERE s.subject.name = :subjectName")
     List<Score> findScoresBySubjectName(@Param("subjectName") String subjectName);
+    
+    @Query("SELECT s.student, SUM(s.theoryMarks + s.iaMarks + s.labMarks) FROM Score s GROUP BY s.student")
+    List<Object[]> getStudentTotalMarks();
 }
