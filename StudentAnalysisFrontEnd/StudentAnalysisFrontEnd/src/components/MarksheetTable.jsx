@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { fetchMarksheet } from "../api/marks";
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography } from "@mui/material";
-
-const MAX_MARKS = { TH: 40, IA: 20, Lab: 40, TOT: 100 }; // Define maximum marks
+import { MaterialReactTable, useMaterialReactTable } from "material-react-table";
+import { Button } from "@mui/material";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 const MarksheetTable = () => {
     const [marksheet, setMarksheet] = useState([]);
@@ -11,81 +14,146 @@ const MarksheetTable = () => {
         fetchMarksheet().then(setMarksheet);
     }, []);
 
-    const subjects = marksheet.length > 0 ? Object.keys(marksheet[0]).filter(key => key !== "Student ID" && key !== "Student Name") : [];
+    const getAvailableSubjects = () => {
+        const subjects = ["CPP", "OOPJ", "ADS", "DBT", "COSSDM", "WPT", "WJP", ".NET"];
+        return subjects.filter(sub =>
+            marksheet.some(student => student[sub] && (
+                student[sub].TH || student[sub].IA || student[sub].Lab || student[sub].TOT
+            ))
+        );
+    };
 
-    // Function to check failing condition
-    const isFail = (score, type) => type !== "TOT" && type !== "TH" && score < (MAX_MARKS[type] * 0.4); // Less than 40% of max marks
+    const exportToPdf = () => {
+        const doc = new jsPDF("landscape", "pt", "a4");
+
+        doc.setFontSize(18);
+        doc.text("Integrated Marksheet", 300, 30);
+        doc.setFontSize(10);
+        doc.text("PG-DAC AUGUST 2024 | CDAC MUMBAI", 300, 45);
+
+        const subjects = getAvailableSubjects();
+
+        const headRows = [
+            ["Student ID", "Student Name", ...subjects.map(sub => ({ content: sub, colSpan: 4, styles: { halign: 'center', fillColor: [200, 200, 255] }})), "TOTAL", "%", "GAC", "Project", "Rank"],
+            ["", "", ...subjects.flatMap(() => ["TH", "IA", "LAB", "TOT"]), "", "", "", "", ""]
+        ];
+
+        const bodyRows = marksheet.map(student => [
+            student["Student ID"], student["Student Name"],
+            ...subjects.flatMap(sub => [
+                student[sub]?.TH ?? "-", student[sub]?.IA ?? "-", student[sub]?.Lab ?? "-", student[sub]?.TOT ?? "-"
+            ]),
+            student["Total"] ?? "-", student["Percentage"] ?? "-", student["GAC"] ?? "-", student["Project"] ?? "-", student["Rank"] ?? "-"
+        ]);
+
+        autoTable(doc, {
+            head: headRows,
+            body: bodyRows,
+            startY: 60,
+            styles: { fontSize: 7, cellPadding: 2, halign: 'center', lineWidth: 0.5, lineColor: [0, 0, 0] },
+            headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+            columnStyles: {
+                1: { halign: 'left' }
+            },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+            didDrawPage: (data) => {
+                const pageCount = doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                doc.text(`Page ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+            }
+        });
+
+        doc.save("Integrated_Marksheet.pdf");
+    };
+
+    const exportToExcel = () => {
+        const subjects = getAvailableSubjects();
+
+        const excelData = marksheet.map(student => {
+            const row = {
+                "Student ID": student["Student ID"],
+                "Student Name": student["Student Name"],
+            };
+
+            subjects.forEach(sub => {
+                row[`TH`] = student[sub]?.TH ?? "-";
+                row[`IA`] = student[sub]?.IA ?? "-";
+                row[`LAB`] = student[sub]?.Lab ?? "-";
+                row[`TOT`] = student[sub]?.TOT ?? "-";
+            });
+
+            row["TOTAL"] = student["Total"] ?? "-";
+            row["%"] = student["Percentage"] ?? "-";
+            row["GAC"] = student["GAC"] ?? "-";
+            row["Project"] = student["Project"] ?? "-";
+            row["Rank"] = student["Rank"] ?? "-";
+
+            return row;
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet([]);
+
+        // Add subject headers and subheaders in the Excel sheet
+        const headerRow1 = ["Student ID", "Student Name", ...subjects.flatMap(sub => [sub, "", "", ""]), "TOTAL", "%", "GAC", "Project", "Rank"];
+        const headerRow2 = ["", "", ...subjects.flatMap(() => ["TH", "IA", "LAB", "TOT"]), "", "", "", "", ""];
+
+        XLSX.utils.sheet_add_aoa(worksheet, [headerRow1, headerRow2], { origin: "A1" });
+
+        // Add data rows
+        XLSX.utils.sheet_add_json(worksheet, excelData, { origin: -1, skipHeader: true });
+
+        // Merge cells for subject names
+        const merges = [];
+        let colIndex = 2;
+        subjects.forEach(() => {
+            merges.push({ s: { r: 0, c: colIndex }, e: { r: 0, c: colIndex + 3 } });
+            colIndex += 4;
+        });
+
+        worksheet['!merges'] = merges;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Marksheet");
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+
+        saveAs(new Blob([excelBuffer], { type: "application/octet-stream" }), "Integrated_Marksheet.xlsx");
+    };
+
+    const columns = [
+        { accessorKey: "Student ID", header: "Student ID" },
+        { accessorKey: "Student Name", header: "Student Name", muiTableBodyCellProps: { align: 'left' } },
+        ...getAvailableSubjects().flatMap(sub => [
+            { accessorKey: `${sub}-TH`, header: "TH" },
+            { accessorKey: `${sub}-IA`, header: "IA" },
+            { accessorKey: `${sub}-Lab`, header: "LAB" },
+            { accessorKey: `${sub}-TOT`, header: "TOT" }
+        ]),
+        { accessorKey: "Total", header: "Total" },
+        { accessorKey: "%", header: "%" },
+        { accessorKey: "GAC", header: "GAC" },
+        { accessorKey: "Project", header: "Project" },
+        { accessorKey: "Rank", header: "Rank", enableSorting: false, enableHiding: true }
+    ];
+
+    const table = useMaterialReactTable({
+        columns,
+        data: marksheet,
+        enableColumnFilters: true,
+        enableSorting: true,
+        enablePagination: true,
+        enableRowSelection: true,
+    });
 
     return (
-        <TableContainer component={Paper} sx={{ maxWidth: "95%", margin: "auto", marginTop: 4, border: "2px solid #000" }}>
-            <Typography variant="h6" align="center" gutterBottom sx={{ padding: 2, fontWeight: "bold" }}>
-                Integrated Marksheet
-            </Typography>
-            <Table>
-                <TableHead>
-                    {/* Main Subject Header Row */}
-                    <TableRow sx={{ backgroundColor: "#FFD700", border: "2px solid black" }}>
-                        <TableCell sx={{ border: "2px solid black", fontWeight: "bold", textAlign: "center" }}>Student ID</TableCell>
-                        <TableCell sx={{ border: "2px solid black", fontWeight: "bold", textAlign: "center" }}>Student Name</TableCell>
-                        {subjects.map((subject) => (
-                            <TableCell key={subject} colSpan={4} align="center" sx={{ border: "2px solid black", fontWeight: "bold" }}>
-                                {subject}
-                            </TableCell>
-                        ))}
-                    </TableRow>
-                    
-                    {/* Sub Headers for TH, IA, Lab, TOT */}
-                    <TableRow sx={{ backgroundColor: "#FFA500", border: "2px solid black" }}>
-                        {["Student ID", "Student Name", ...subjects.flatMap(() => ["TH", "IA", "Lab", "TOT"])].map((header, index) => (
-                            <TableCell key={index} align="center" sx={{ border: "2px solid black", fontWeight: "bold" }}>
-                                {header}
-                            </TableCell>
-                        ))}
-                    </TableRow>
-
-                    {/* Maximum Marks Row (Below the Header Row) */}
-                    <TableRow sx={{ backgroundColor: "#FFC107", border: "2px solid black" }}>
-                        <TableCell sx={{ border: "2px solid black", fontWeight: "bold", textAlign: "center" }}>Marks ={">"}</TableCell>
-                        <TableCell sx={{ border: "2px solid black" }}></TableCell>
-                        {subjects.map((subject, index) => (
-                            <React.Fragment key={subject + index}>
-                                <TableCell align="center" sx={{ border: "2px solid black", fontWeight: "bold" }}>{MAX_MARKS.TH}</TableCell>
-                                <TableCell align="center" sx={{ border: "2px solid black", fontWeight: "bold" }}>{MAX_MARKS.IA}</TableCell>
-                                <TableCell align="center" sx={{ border: "2px solid black", fontWeight: "bold" }}>{MAX_MARKS.Lab}</TableCell>
-                                <TableCell align="center" sx={{ border: "2px solid black", fontWeight: "bold" }}>{MAX_MARKS.TOT}</TableCell>
-                            </React.Fragment>
-                        ))}
-                    </TableRow>
-                </TableHead>
-                
-                <TableBody>
-                    {marksheet.map((student, index) => (
-                        <TableRow key={index} sx={{ border: "2px solid black" }}>
-                            <TableCell sx={{ border: "2px solid black", fontWeight: "bold" }}>{student["Student ID"]}</TableCell>
-                            <TableCell sx={{ border: "2px solid black", fontWeight: "bold" }}>{student["Student Name"]}</TableCell>
-                            {subjects.map((subject, subIndex) => (
-                                <React.Fragment key={subject + subIndex}>
-                                    {["TH", "IA", "Lab", "TOT"].map((type) => (
-                                        <TableCell
-                                            key={type}
-                                            align="center"
-                                            sx={{
-                                                border: "2px solid black",
-                                                color: isFail(student[subject]?.[type], type) ? "red" : "black",
-                                                fontWeight: isFail(student[subject]?.[type], type) ? "bold" : "normal",
-                                                backgroundColor: isFail(student[subject]?.[type], type) ? "#FFCCCC" : "transparent"
-                                            }}
-                                        >
-                                            {student[subject]?.[type] || "-"}
-                                        </TableCell>
-                                    ))}
-                                </React.Fragment>
-                            ))}
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </TableContainer>
+        <div style={{ maxWidth: "95%", margin: "auto", marginTop: 20 }}>
+            <Button variant="contained" color="primary" onClick={exportToPdf} style={{ margin: "5px" }}>
+                Export to PDF
+            </Button>
+            <Button variant="contained" color="secondary" onClick={exportToExcel} style={{ margin: "5px" }}>
+                Export to Excel
+            </Button>
+            <MaterialReactTable table={table} />
+        </div>
     );
 };
 
