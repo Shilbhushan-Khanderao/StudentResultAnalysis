@@ -3,13 +3,10 @@ import { Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import Dashboard from "./pages/Dashboard";
-import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ProtectedRoute from "./pages/ProtectedRoute";
 import ReportsPage from "./pages/ReportsPage";
 import MarksUploadPage from "./pages/MarksUploadPage";
 import MarksUpdatePage from "./pages/MarksUpdatePage";
-import StudentTrendPage from "./pages/StudentTrendPage";
-import SubjectTrendPage from "./pages/SubjectTrendPage";
 import StudentUploadPage from "./pages/StudentUploadPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -47,13 +44,10 @@ const App = () => {
             element={<ProtectedRoute requiredRole={["ADMIN", "TEACHER"]} />}
           >
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/analytics" element={<AnalyticsDashboard />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/students/upload" element={<StudentUploadPage />} />
             <Route path="/marks/upload" element={<MarksUploadPage />} />
             <Route path="/marks/update" element={<MarksUpdatePage />} />
-            <Route path="/trends/student" element={<StudentTrendPage />} />
-            <Route path="/trends/subject" element={<SubjectTrendPage />} />
             <Route path="/marksheet" element={<MarksheetPage />} />
           </Route>
         </Routes>
