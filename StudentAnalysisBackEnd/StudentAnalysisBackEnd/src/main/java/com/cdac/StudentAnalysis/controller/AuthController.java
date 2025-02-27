@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cdac.StudentAnalysis.enums.RoleType;
 import com.cdac.StudentAnalysis.model.Role;
 import com.cdac.StudentAnalysis.model.User;
 import com.cdac.StudentAnalysis.repository.UserRepository;
@@ -72,12 +73,19 @@ public class AuthController {
         String username = registerRequest.get("username");
         String password = registerRequest.get("password");
         String role = registerRequest.get("role");
+        
+        RoleType roleType;
+        try {
+            roleType = RoleType.valueOf(role.toUpperCase()); // Ensures ADMIN/TEACHER is valid
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid role provided!");
+        }
 
         if (userDetailsService.userExists(username)) {
             return ResponseEntity.badRequest().body("Username is already taken!");
         }
 
-        userDetailsService.saveUser(username, passwordEncoder.encode(password), role);
+        userDetailsService.saveUser(username, passwordEncoder.encode(password), roleType);
         return ResponseEntity.ok("User registered successfully!");
     }
 }

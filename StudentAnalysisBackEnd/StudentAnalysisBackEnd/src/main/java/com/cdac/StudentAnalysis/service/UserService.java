@@ -1,5 +1,6 @@
 package com.cdac.StudentAnalysis.service;
 
+import com.cdac.StudentAnalysis.enums.RoleType;
 import com.cdac.StudentAnalysis.model.Role;
 import com.cdac.StudentAnalysis.model.User;
 import com.cdac.StudentAnalysis.repository.RoleRepository;
@@ -64,7 +65,7 @@ public class UserService {
 
     // Assign a role to a user
     @Transactional
-    public User assignRole(Long userId, String roleName) {
+    public User assignRole(Long userId, RoleType roleName) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 

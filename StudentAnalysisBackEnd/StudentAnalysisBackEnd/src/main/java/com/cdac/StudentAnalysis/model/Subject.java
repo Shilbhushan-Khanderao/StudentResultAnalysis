@@ -1,5 +1,7 @@
 package com.cdac.StudentAnalysis.model;
 
+import com.cdac.StudentAnalysis.enums.SubjectType;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,5 +18,7 @@ public class Subject {
     @Column(nullable = false, unique = true)
     private String name;
 
-    private String type; // Regular or Combined
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SubjectType type;
 }

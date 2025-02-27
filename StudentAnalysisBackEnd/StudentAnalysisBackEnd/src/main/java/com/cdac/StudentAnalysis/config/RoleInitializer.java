@@ -1,5 +1,6 @@
 package com.cdac.StudentAnalysis.config;
 
+import com.cdac.StudentAnalysis.enums.RoleType;
 import com.cdac.StudentAnalysis.model.Role;
 import com.cdac.StudentAnalysis.repository.RoleRepository;
 
@@ -23,11 +24,11 @@ public class RoleInitializer {
     @Transactional
     CommandLineRunner initRoles(RoleRepository roleRepository) {
         return args -> {
-            List<String> roles = Arrays.asList("ADMIN", "TEACHER");
-            for (String roleName : roles) {
-                roleRepository.findByName(roleName).orElseGet(() -> {
-                    logger.info("Creating role: {}", roleName);
-                    return roleRepository.save(new Role(roleName));
+            List<RoleType> roles = Arrays.asList(RoleType.ADMIN, RoleType.TEACHER);
+            for (RoleType roleType : roles) {
+                roleRepository.findByName(roleType).orElseGet(() -> {
+                    logger.info("Creating role: {}", roleType);
+                    return roleRepository.save(new Role(roleType));
                 });
             }
         };
