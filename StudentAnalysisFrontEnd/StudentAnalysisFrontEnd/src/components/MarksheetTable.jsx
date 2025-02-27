@@ -16,41 +16,52 @@ const MarksheetTable = () => {
   const [subTitle, setSubTitle] = useState("Integrated Marksheet");
 
   useEffect(() => {
-    fetchMarksheet().then(data => {
-        console.log("Fetched Marksheet:", data);
-        
-        // Replace dots in keys (for MS.NET -> MS_NET)
-        const sanitizedData = data.map(student => {
-          const sanitizedStudent = {};
-          for (let key in student) {
-              const sanitizedKey = key.replace(/\./g, "_");
-              sanitizedStudent[sanitizedKey] = student[key];
-          }
-          return sanitizedStudent;
+    fetchMarksheet().then((data) => {
+      console.log("Fetched Marksheet:", data);
+
+      // Sanitize keys if there are dots in them (e.g., MS.NET -> MS_NET)
+      const sanitizedData = data.map((student) => {
+        const sanitizedStudent = {};
+        for (let key in student) {
+          const sanitizedKey = key.replace(/\./g, "_");
+          sanitizedStudent[sanitizedKey] = student[key];
+        }
+        return sanitizedStudent;
       });
-        setMarksheet(sanitizedData);
+      setMarksheet(sanitizedData);
     });
   }, []);
 
-  const getAvailableSubjects = () => {
-    const subjects = [
-      "CPP",
-      "OOPJ",
-      "ADS",
-      "DBT",
-      "COSSDM",
-      "WPT",
-      "WJP",
-      "MS_NET",
-    ];
-    return subjects.filter((sub) =>
-      marksheet.some(
-        (student) =>
-          student[sub] &&
-          (student[sub].TH !== undefined || student[sub].IA !== undefined || student[sub].Lab !== undefined || student[sub].TOT !== undefined)
-      )
-    );
-  };
+  const subjects = ["CPP", "OOPJ", "ADS", "DBT", "COSSDM", "WPT", "WJP", "MS_NET"];
+
+  const columns = [
+    { accessorKey: "Student ID", header: "Student ID" },
+    {
+      accessorKey: "Student Name",
+      header: "Student Name",
+      muiTableBodyCellProps: { align: "left" },
+    },
+    ...subjects.flatMap((sub) => [
+      { accessorKey: `${sub}_TH`, header: `${sub} TH` },
+      { accessorKey: `${sub}_IA`, header: `${sub} IA` },
+      { accessorKey: `${sub}_Lab`, header: `${sub} LAB` },
+      { accessorKey: `${sub}_TOT`, header: `${sub} TOT` },
+    ]),
+    { accessorKey: "Total", header: "Total" },
+    { accessorKey: "Percentage", header: "%" },
+    { accessorKey: "GAC", header: "GAC" },
+    { accessorKey: "Project", header: "Project" },
+    { accessorKey: "Rank", header: "Rank" },
+  ];
+
+  const table = useMaterialReactTable({
+    columns,
+    data: marksheet,
+    enableColumnFilters: true,
+    enableSorting: true,
+    enablePagination: true,
+    enableRowSelection: true,
+  });
 
   const exportToPdf = () => {
     const doc = new jsPDF("landscape", "pt", "a4");
@@ -60,8 +71,6 @@ const MarksheetTable = () => {
     doc.text(mainTitle, pageWidth / 2, 30, { align: "center" });
     doc.setFontSize(12);
     doc.text(subTitle, pageWidth / 2, 50, { align: "center" });
-
-    const subjects = getAvailableSubjects();
 
     const headRows = [
       [
@@ -94,10 +103,10 @@ const MarksheetTable = () => {
       student["Student ID"],
       student["Student Name"],
       ...subjects.flatMap((sub) => [
-        student[sub]?.TH ?? "-",
-        student[sub]?.IA ?? "-",
-        student[sub]?.Lab ?? "-",
-        student[sub]?.TOT ?? "-",
+        student[`${sub}_TH`] ?? "-",
+        student[`${sub}_IA`] ?? "-",
+        student[`${sub}_Lab`] ?? "-",
+        student[`${sub}_TOT`] ?? "-",
       ]),
       student["Total"] ?? "-",
       student["Percentage"] ?? "-",
@@ -110,39 +119,14 @@ const MarksheetTable = () => {
       head: headRows,
       body: bodyRows,
       startY: 60,
-      styles: {
-        fontSize: 7,
-        cellPadding: 2,
-        halign: "center",
-        lineWidth: 0.5,
-        lineColor: [0, 0, 0],
-      },
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontStyle: "bold",
-      },
-      columnStyles: {
-        1: { halign: "left" },
-      },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      didDrawPage: (data) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.text(
-          `Page ${pageCount}`,
-          data.settings.margin.left,
-          doc.internal.pageSize.height - 10
-        );
-      },
+      styles: { fontSize: 7, cellPadding: 2, halign: "center" },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
     });
 
     doc.save("Integrated_Marksheet.pdf");
   };
 
   const exportToExcel = () => {
-    const subjects = getAvailableSubjects();
-
     const excelData = marksheet.map((student) => {
       const row = {
         "Student ID": student["Student ID"],
@@ -150,10 +134,10 @@ const MarksheetTable = () => {
       };
 
       subjects.forEach((sub) => {
-        row[`TH`] = student[sub]?.TH ?? "-";
-        row[`IA`] = student[sub]?.IA ?? "-";
-        row[`LAB`] = student[sub]?.Lab ?? "-";
-        row[`TOT`] = student[sub]?.TOT ?? "-";
+        row[`${sub} - TH`] = student[`${sub}_TH`] ?? "-";
+        row[`${sub} - IA`] = student[`${sub}_IA`] ?? "-";
+        row[`${sub} - LAB`] = student[`${sub}_Lab`] ?? "-";
+        row[`${sub} - TOT`] = student[`${sub}_TOT`] ?? "-";
       });
 
       row["TOTAL"] = student["Total"] ?? "-";
@@ -165,87 +149,11 @@ const MarksheetTable = () => {
       return row;
     });
 
-    const worksheet = XLSX.utils.json_to_sheet([]);
-
-    // Add subject headers and subheaders in the Excel sheet
-    const headerRow1 = [
-      "Student ID",
-      "Student Name",
-      ...subjects.flatMap((sub) => [sub, "", "", ""]),
-      "TOTAL",
-      "%",
-      "GAC",
-      "Project",
-      "Rank",
-    ];
-    const headerRow2 = [
-      "",
-      "",
-      ...subjects.flatMap(() => ["TH", "IA", "LAB", "TOT"]),
-      "",
-      "",
-      "",
-      "",
-      "",
-    ];
-
-    XLSX.utils.sheet_add_aoa(worksheet, [headerRow1, headerRow2], {
-      origin: "A1",
-    });
-
-    // Add data rows
-    XLSX.utils.sheet_add_json(worksheet, excelData, {
-      origin: -1,
-      skipHeader: true,
-    });
-
-    // Merge cells for subject names
-    const merges = [];
-    let colIndex = 2;
-    subjects.forEach(() => {
-      merges.push({ s: { r: 0, c: colIndex }, e: { r: 0, c: colIndex + 3 } });
-      colIndex += 4;
-    });
-
-    worksheet["!merges"] = merges;
-
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Marksheet");
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
-    });
-
-    saveAs(
-      new Blob([excelBuffer], { type: "application/octet-stream" }),
-      "Integrated_Marksheet.xlsx"
-    );
+    XLSX.writeFile(workbook, "Integrated_Marksheet.xlsx");
   };
-
-  const columns = [
-    { accessorKey: "Student ID", header: "Student ID" },
-    { accessorKey: "Student Name", header: "Student Name", muiTableBodyCellProps: { align: 'left' } },
-    ...getAvailableSubjects().flatMap(sub => [
-        { accessorKey: `${sub}-TH`, header: "TH" },
-        { accessorKey: `${sub}-IA`, header: "IA" },
-        { accessorKey: `${sub}-LAB`, header: "LAB" },
-        { accessorKey: `${sub}-TOT`, header: "TOT" }
-    ]),
-    { accessorKey: "Total", header: "Total" },
-    { accessorKey: "%", header: "%" },
-    { accessorKey: "GAC", header: "GAC" },
-    { accessorKey: "Project", header: "Project" },
-    { accessorKey: "Rank", header: "Rank", enableSorting: false, enableHiding: true }
-];
-
-const table = useMaterialReactTable({
-    columns,
-    data: marksheet,
-    enableColumnFilters: true,
-    enableSorting: true,
-    enablePagination: true,
-    enableRowSelection: true,
-});
 
   return (
     <div style={{ maxWidth: "95%", margin: "auto", marginTop: 20 }}>
@@ -279,11 +187,12 @@ const table = useMaterialReactTable({
       >
         Export to Excel
       </Button>
-      <MaterialReactTable columns={columns}
-                data={marksheet}
-                enablePagination={false}
-                enableSorting={false}
-                enableColumnFilters={false} />
+
+      <MaterialReactTable
+        columns={columns}
+        data={marksheet}
+        enablePagination={false}
+      />
     </div>
   );
 };

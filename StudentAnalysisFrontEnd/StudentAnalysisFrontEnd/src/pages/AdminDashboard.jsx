@@ -109,19 +109,6 @@ const AdminDashboard = () => {
             </div>
           </Link>
         </div>
-
-        {/* Analytics - Accessible by Admin & Teacher */}
-        <div className="col-md-4">
-          <Link
-            to="/analytics"
-            className="card text-center p-3 mb-3 shadow-sm d-flex justify-content-between align-items-center"
-          >
-            <div>
-              <h5>Analytics</h5>
-              <p>View performance analysis.</p>
-            </div>
-          </Link>
-        </div>
         <div className="col-md-4">
           <Link
             to="/marksheet"
