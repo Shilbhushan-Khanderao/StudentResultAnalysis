@@ -1,9 +1,14 @@
 package com.cdac.StudentAnalysis.model;
 
-import com.cdac.StudentAnalysis.enums.SubjectType;
-
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Data
@@ -18,7 +23,6 @@ public class Subject {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SubjectType type;
+    private String type;
 }

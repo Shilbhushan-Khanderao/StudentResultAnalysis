@@ -1,17 +1,17 @@
 package com.cdac.StudentAnalysis.service;
 
-import com.cdac.StudentAnalysis.enums.RoleType;
-import com.cdac.StudentAnalysis.model.Role;
-import com.cdac.StudentAnalysis.model.User;
-import com.cdac.StudentAnalysis.repository.RoleRepository;
-import com.cdac.StudentAnalysis.repository.UserRepository;
+import java.util.Collections;
+import java.util.Optional;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Optional;
+import com.cdac.StudentAnalysis.model.Role;
+import com.cdac.StudentAnalysis.model.User;
+import com.cdac.StudentAnalysis.repository.RoleRepository;
+import com.cdac.StudentAnalysis.repository.UserRepository;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -39,7 +39,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return userRepository.existsByUsername(username);
     }
 
-    public void saveUser(String username, String password, RoleType role2) {
+    public void saveUser(String username, String password, String role2) {
     	Optional<Role> optionalRole = roleRepository.findByName(role2);
     	
     	if (optionalRole.isEmpty()) {

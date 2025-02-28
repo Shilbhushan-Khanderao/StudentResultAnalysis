@@ -1,14 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { fetchMarksheet } from "../api/marks";
-import {
-  MaterialReactTable,
-  useMaterialReactTable,
-} from "material-react-table";
-import { Button, TextField } from "@mui/material";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
+import { useReactTable, getCoreRowModel, flexRender, getPaginationRowModel, getSortedRowModel, getFilteredRowModel } from "@tanstack/react-table";
+import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, TextField, Paper } from "@mui/material";
 
 const MarksheetTable = () => {
   const [marksheet, setMarksheet] = useState([]);
@@ -36,31 +32,31 @@ const MarksheetTable = () => {
 
   const columns = [
     { accessorKey: "Student ID", header: "Student ID" },
+    { accessorKey: "Student Name", header: "Student Name" },
     {
-      accessorKey: "Student Name",
-      header: "Student Name",
-      muiTableBodyCellProps: { align: "left" },
+      header: "Subjects",
+      columns: subjects.flatMap((sub) => [
+        { accessorKey: `${sub}_TH`, header: "TH" },
+        { accessorKey: `${sub}_IA`, header: "IA" },
+        { accessorKey: `${sub}_Lab`, header: "LAB" },
+        { accessorKey: `${sub}_TOT`, header: "TOT" },
+      ]),
     },
-    ...subjects.flatMap((sub) => [
-      { accessorKey: `${sub}_TH`, header: `${sub} TH` },
-      { accessorKey: `${sub}_IA`, header: `${sub} IA` },
-      { accessorKey: `${sub}_Lab`, header: `${sub} LAB` },
-      { accessorKey: `${sub}_TOT`, header: `${sub} TOT` },
-    ]),
-    { accessorKey: "Total", header: "Total" },
+    { accessorKey: "Total", header: "TOTAL" },
     { accessorKey: "Percentage", header: "%" },
     { accessorKey: "GAC", header: "GAC" },
     { accessorKey: "Project", header: "Project" },
     { accessorKey: "Rank", header: "Rank" },
   ];
+  
 
-  const table = useMaterialReactTable({
-    columns,
+  const table = useReactTable({
     data: marksheet,
-    enableColumnFilters: true,
-    enableSorting: true,
-    enablePagination: true,
-    enableRowSelection: true,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   const exportToPdf = () => {
@@ -156,7 +152,7 @@ const MarksheetTable = () => {
   };
 
   return (
-    <div style={{ maxWidth: "95%", margin: "auto", marginTop: 20 }}>
+    <Paper sx={{ width: "100%", overflow: "hidden", padding: 2 }}>
       <TextField
         label="Main Title"
         variant="outlined"
@@ -188,12 +184,55 @@ const MarksheetTable = () => {
         Export to Excel
       </Button>
 
-      <MaterialReactTable
-        columns={columns}
-        data={marksheet}
-        enablePagination={false}
+      <TableContainer sx={{ maxHeight: 800, marginTop: 2 }}>
+        <Table stickyHeader>
+          <TableHead>
+            {/* First Header Row (Main Categories) */}
+            <TableRow sx={{ backgroundColor: "#2980b9", color: "white" }}>
+              <TableCell rowSpan={2} sx={{ textAlign: "center", fontWeight: "bold", color: "white", backgroundColor: "#2980b9" }}>Student ID</TableCell>
+              <TableCell rowSpan={2} sx={{ textAlign: "center", fontWeight: "bold", color: "white", backgroundColor: "#2980b9" }}>Student Name</TableCell>
+              {subjects.map((sub) => (
+                <TableCell key={sub} colSpan={4} sx={{ textAlign: "center", fontWeight: "bold", color: "white", backgroundColor: "#2980b9" }}>
+                  {sub}
+                </TableCell>
+              ))}
+              <TableCell rowSpan={2} sx={{ textAlign: "center", fontWeight: "bold", color: "white", backgroundColor: "#2980b9" }}>TOTAL</TableCell>
+              <TableCell rowSpan={2} sx={{ textAlign: "center", fontWeight: "bold", color: "white", backgroundColor: "#2980b9" }}>%</TableCell>
+              <TableCell rowSpan={2} sx={{ textAlign: "center", fontWeight: "bold", color: "white", backgroundColor: "#2980b9" }}>GAC</TableCell>
+              <TableCell rowSpan={2} sx={{ textAlign: "center", fontWeight: "bold", color: "white", backgroundColor: "#2980b9" }}>Project</TableCell>
+              <TableCell rowSpan={2} sx={{ textAlign: "center", fontWeight: "bold", color: "white", backgroundColor: "#2980b9" }}>Rank</TableCell>
+            </TableRow>
+            {/* Second Header Row (Sub Categories) */}
+            <TableRow sx={{ backgroundColor: "#2980b9", color: "white" }}>
+              {subjects.flatMap(() => ["TH", "IA", "LAB", "TOT"].map((type) => (
+                <TableCell key={type} sx={{ textAlign: "center", fontWeight: "bold", color: "white", backgroundColor: "#2980b9" }}>
+                  {type}
+                </TableCell>
+              )))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} sx={{ textAlign: "center" }}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        component="div"
+        count={table.getPrePaginationRowModel().rows.length} // Total rows count
+        rowsPerPage={table.getState().pagination.pageSize} // Rows per page
+        page={table.getState().pagination.pageIndex} // Current page
+        onPageChange={(event, newPage) => table.setPageIndex(newPage)} // Set new page
+        onRowsPerPageChange={(event) => table.setPageSize(Number(event.target.value))} // Set rows per page
       />
-    </div>
+    </Paper>
   );
 };
 

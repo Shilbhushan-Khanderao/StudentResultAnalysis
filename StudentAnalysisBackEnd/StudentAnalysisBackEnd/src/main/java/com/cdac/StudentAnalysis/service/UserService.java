@@ -1,17 +1,17 @@
 package com.cdac.StudentAnalysis.service;
 
-import com.cdac.StudentAnalysis.enums.RoleType;
-import com.cdac.StudentAnalysis.model.Role;
-import com.cdac.StudentAnalysis.model.User;
-import com.cdac.StudentAnalysis.repository.RoleRepository;
-import com.cdac.StudentAnalysis.repository.UserRepository;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import com.cdac.StudentAnalysis.model.Role;
+import com.cdac.StudentAnalysis.model.User;
+import com.cdac.StudentAnalysis.repository.RoleRepository;
+import com.cdac.StudentAnalysis.repository.UserRepository;
 
 @Service
 public class UserService {
@@ -65,7 +65,7 @@ public class UserService {
 
     // Assign a role to a user
     @Transactional
-    public User assignRole(Long userId, RoleType roleName) {
+    public User assignRole(Long userId, String roleName) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 

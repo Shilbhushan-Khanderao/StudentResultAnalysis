@@ -1,11 +1,11 @@
 package com.cdac.StudentAnalysis.repository;
 
-import com.cdac.StudentAnalysis.enums.RoleType;
-import com.cdac.StudentAnalysis.model.Role;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.cdac.StudentAnalysis.model.Role;
+
 public interface RoleRepository extends JpaRepository<Role, Long> {
-    Optional<Role> findByName(RoleType role2);
+    Optional<Role> findByName(String string);
 }

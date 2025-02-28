@@ -1,11 +1,11 @@
 package com.cdac.StudentAnalysis.config;
 
-import com.cdac.StudentAnalysis.enums.RoleType;
-import com.cdac.StudentAnalysis.model.Role;
-import com.cdac.StudentAnalysis.repository.RoleRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.cdac.StudentAnalysis.model.Role;
+import com.cdac.StudentAnalysis.repository.RoleRepository;
 
 @Configuration
 public class RoleInitializer {
