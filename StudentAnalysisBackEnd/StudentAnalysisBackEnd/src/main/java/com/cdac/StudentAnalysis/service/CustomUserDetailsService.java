@@ -1,5 +1,6 @@
 package com.cdac.StudentAnalysis.service;
 
+import com.cdac.StudentAnalysis.enums.RoleType;
 import com.cdac.StudentAnalysis.model.Role;
 import com.cdac.StudentAnalysis.model.User;
 import com.cdac.StudentAnalysis.repository.RoleRepository;
@@ -38,11 +39,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         return userRepository.existsByUsername(username);
     }
 
-    public void saveUser(String username, String password, String roleName) {
-    	Optional<Role> optionalRole = roleRepository.findByName(roleName);
+    public void saveUser(String username, String password, RoleType role2) {
+    	Optional<Role> optionalRole = roleRepository.findByName(role2);
     	
     	if (optionalRole.isEmpty()) {
-            throw new RuntimeException("Role not found: " + roleName);
+            throw new RuntimeException("Role not found: " + role2);
         }
 
         Role role = optionalRole.get();

@@ -1,5 +1,7 @@
 package com.cdac.StudentAnalysis.model;
 
+import com.cdac.StudentAnalysis.enums.RoleType;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,10 +17,11 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = true)
-    private String name;
+    private RoleType name;
 
-    public Role(String roleName) {
+    public Role(RoleType roleName) {
         this.name = roleName;
     }
 }
