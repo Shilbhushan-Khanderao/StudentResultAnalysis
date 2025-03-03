@@ -13,6 +13,10 @@ import java.util.Optional;
 public interface ScoreRepository extends JpaRepository<Score, Long> {
 	
 	List<Score> findAll();
+	
+	@Query("SELECT s FROM Score s WHERE s.student.batch.id = :batchId")
+		List<Score> findScoresByBatch(@Param("batchId") Long batchId);
+
 	 
     Optional<Score> findByStudentAndSubject(Student student, Subject subject);
 

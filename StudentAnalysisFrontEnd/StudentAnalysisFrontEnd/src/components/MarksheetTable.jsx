@@ -4,15 +4,19 @@ import {
   MaterialReactTable,
   useMaterialReactTable,
 } from "material-react-table";
-import { Button, TextField } from "@mui/material";
+import { Button, TextField, MenuItem, Select, FormControl, InputLabel } from "@mui/material";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { getBatches } from "../api/batches";
 
 const MarksheetTable = () => {
   const [marksheet, setMarksheet] = useState([]);
   const [mainTitle, setMainTitle] = useState("PG-DAC | CDAC MUMBAI");
   const [subTitle, setSubTitle] = useState("Integrated Marksheet");
+  const [batches, setBatches] = useState([]);
+  const [batchId, setBatchId] = useState("");
+
 
   // Define subjects outside useEffect to use consistently throughout the component
   const subjects = [
@@ -27,7 +31,13 @@ const MarksheetTable = () => {
   ];
 
   useEffect(() => {
-    fetchMarksheet().then((data) => {
+    // Fetch batches when the component loads
+    getBatches().then(setBatches);
+  }, []);
+
+  useEffect(() => {
+    if(batchId){
+    fetchMarksheet(batchId).then((data) => {
       console.log("Fetched Marksheet:", data);
 
       // Flatten the nested structure to match our column definitions
@@ -77,7 +87,8 @@ const MarksheetTable = () => {
 
       setMarksheet(flattenedData);
     });
-  }, []);
+  }
+  }, [batchId]);
 
   // Create columns based on the same subjects array
   const columns = [
@@ -329,6 +340,19 @@ const MarksheetTable = () => {
 
   return (
     <div style={{ maxWidth: "95%", margin: "auto", marginTop: 20 }}>
+      <FormControl style={{ margin: "5px", width: "200px" }}>
+        <InputLabel>Select Batch</InputLabel>
+        <Select
+          value={batchId}
+          onChange={(e) => setBatchId(e.target.value)}
+        >
+          {batches.map((batch) => (
+            <MenuItem key={batch.id} value={batch.id}>
+              {batch.batchName}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
       <TextField
         label="Main Title"
         variant="outlined"

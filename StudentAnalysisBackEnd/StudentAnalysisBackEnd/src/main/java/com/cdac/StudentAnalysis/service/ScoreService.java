@@ -47,9 +47,9 @@ public class ScoreService {
         return scoreRepository.findAll();
     }
     
-    //Get Marksheet for all students
-    public List<Map<String, Object>> getFormattedMarksheet() {
-        List<Score> scores = scoreRepository.findAll();
+    //Get Marksheet for all students of a batch
+    public List<Map<String, Object>> getFormattedMarksheet(Long batchId) {
+        List<Score> scores = scoreRepository.findScoresByBatch(batchId);
         
         Map<String, Map<String, Object>> studentMap = new LinkedHashMap<>();
 
@@ -58,11 +58,15 @@ public class ScoreService {
             String studentName = score.getStudent().getName();
             String subject = score.getSubject().getName();
             
+            // Ensure student entry exists
             studentMap.putIfAbsent(studentId, new LinkedHashMap<>());
             Map<String, Object> studentData = studentMap.get(studentId);
 
+            // Add basic student details
             studentData.put("Student ID", studentId);
             studentData.put("Student Name", studentName);
+            
+            // Add marks for the subject
             studentData.put(subject, Map.of(
                 "TH", score.getTheoryMarks(),
                 "IA", score.getIaMarks(),
@@ -73,6 +77,7 @@ public class ScoreService {
 
         return new ArrayList<>(studentMap.values());
     }
+
     
     /**
      * Fetch all scores for a given student roll number.

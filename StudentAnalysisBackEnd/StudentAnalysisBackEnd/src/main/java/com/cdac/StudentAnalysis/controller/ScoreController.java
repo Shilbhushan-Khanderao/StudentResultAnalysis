@@ -31,11 +31,10 @@ public class ScoreController {
     
     //Fetch Marksheet Data
     @GetMapping("/marksheet")
-    public ResponseEntity<ApiResponse> getMarksheet() {
-        List<Map<String, Object>> marksheet = scoreService.getFormattedMarksheet();
-        return ResponseEntity.ok(new ApiResponse("Marksheet data retrieved successfully", marksheet));
+    public ResponseEntity<ApiResponse> getMarksheet(@RequestParam Long batchId) {
+        List<Map<String, Object>> marksheet = scoreService.getFormattedMarksheet(batchId);
+        return ResponseEntity.ok(new ApiResponse("Marksheet for batch retrieved successfully", marksheet));
     }
-
     
     //Fetch all scores for a specific student by roll number.
     @GetMapping("/student/{rollNumber}")

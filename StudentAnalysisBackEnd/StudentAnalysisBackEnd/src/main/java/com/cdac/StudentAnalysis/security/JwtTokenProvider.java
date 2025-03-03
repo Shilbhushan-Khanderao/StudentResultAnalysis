@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,20 +17,20 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.expiration}")
-    private long jwtExpiration; // Expiration time in milliseconds
+	@Value("${jwt.secret}")
+	private String jwtSecret;
+
+	@Value("${jwt.expiration}")
+	private long jwtExpiration;
 
     private Key key;
 
     @PostConstruct
     public void init() {
-        // Generate a secure key dynamically
-        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
     }
-
-    /**
-     * Generate a JWT token for the given username
-     */
+    
+    // Generate a JWT token for the given username
     public String generateToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
@@ -39,9 +40,8 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    /**
-     * Extract username from the JWT token
-     */
+    
+    // Extract username from the JWT token
     public String getUsernameFromToken(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -51,9 +51,7 @@ public class JwtTokenProvider {
         return claims.getSubject();
     }
 
-    /**
-     * Validate the JWT token
-     */
+    //Validate the JWT token     
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
@@ -67,9 +65,7 @@ public class JwtTokenProvider {
         }
     }
 
-    /**
-     * Resolve the token from the Authorization header
-     */
+    //Resolve the token from the Authorization header
     public String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {

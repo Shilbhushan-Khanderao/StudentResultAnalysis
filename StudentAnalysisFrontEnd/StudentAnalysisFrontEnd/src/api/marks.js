@@ -1,9 +1,9 @@
 import axios from './axios';
 
 // Fetch Marksheet data
-export const fetchMarksheet = async () => {
+export const fetchMarksheet = async (batchId) => {
     try {
-        const response = await axios.get('/marks/marksheet');
+        const response = await axios.get(`/marks/marksheet?batchId=${batchId}`);
         return response.data.data;
     } catch (error) {
         console.error("Error fetching marksheet data", error);
