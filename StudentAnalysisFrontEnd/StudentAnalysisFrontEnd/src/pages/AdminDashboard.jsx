@@ -120,6 +120,17 @@ const AdminDashboard = () => {
             </div>
           </Link>
         </div>
+        <div className="col-md-4">
+          <Link
+            to="/ranking-history"
+            className="card text-center p-3 mb-3 shadow-sm d-flex justify-content-between align-items-center"
+          >
+            <div>
+              <h5>Ranking History</h5>
+              <p>View ranking history.</p>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   );
