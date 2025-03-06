@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface RankingHistoryRepository extends JpaRepository<RankingHistory, Long> {
 	
-	@Query("SELECT rh FROM RankingHistory rh WHERE rh.student.id = :studentId ORDER BY rh.timestamp DESC")
+	@Query("SELECT rh FROM RankingHistory rh WHERE rh.student.id = :studentId ORDER BY rh.timestamp")
     List<RankingHistory> findRankHistoryByStudent(@Param("studentId") Long studentId);
 
 }

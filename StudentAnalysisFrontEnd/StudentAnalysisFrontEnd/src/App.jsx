@@ -17,6 +17,7 @@ import SubjectManagementPage from "./pages/SubjectManagementPage";
 import RankingPage from "./pages/RankingPage";
 import MarksheetPage from "./pages/MarksheetPage";
 import RankingHistoryPage from "./pages/RankingHistoryPage";
+import ScoreManagementPage from "./pages/ScoreManagementPage";
 import Navbar from "./components/Navbar";
 
 const App = () => {
@@ -38,6 +39,7 @@ const App = () => {
             <Route path="/batches" element={<BatchManagementPage />} />
             <Route path="/subjects" element={<SubjectManagementPage />} />
             <Route path="/rankings" element={<RankingPage />} />
+            <Route path="/score-management" element={<ScoreManagementPage />} />
             <Route path="/ranking-history" element={<RankingHistoryPage />} />
           </Route>
 

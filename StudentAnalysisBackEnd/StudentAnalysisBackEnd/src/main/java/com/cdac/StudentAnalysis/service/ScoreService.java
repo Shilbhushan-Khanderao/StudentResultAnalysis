@@ -77,6 +77,37 @@ public class ScoreService {
 
         return new ArrayList<>(studentMap.values());
     }
+    
+    //Get Marksheet for a specific subject or list of subjects
+    public List<Map<String, Object>> getMarksheetForSubjects(Long batchId, List<Long> subjectIds) {
+        List<Score> scores = scoreRepository.findScoresByBatch(batchId);
+        Map<String, Map<String, Object>> studentMap = new LinkedHashMap<>();
+
+        for (Score score : scores) {
+            if (!subjectIds.contains(score.getSubject().getId())) {
+                continue; // Ignore subjects not in the list
+            }
+
+            String studentId = score.getStudent().getRollNumber();
+            String studentName = score.getStudent().getName();
+            String subject = score.getSubject().getName();
+
+            studentMap.putIfAbsent(studentId, new LinkedHashMap<>());
+            Map<String, Object> studentData = studentMap.get(studentId);
+
+            studentData.put("Student ID", studentId);
+            studentData.put("Student Name", studentName);
+            studentData.put(subject, Map.of(
+                "TH", score.getTheoryMarks(),
+                "IA", score.getIaMarks(),
+                "Lab", score.getLabMarks(),
+                "TOT", score.getTheoryMarks() + score.getIaMarks() + score.getLabMarks()
+            ));
+        }
+
+        return new ArrayList<>(studentMap.values());
+    }
+
 
     
     /**
@@ -190,9 +221,8 @@ public class ScoreService {
         }
     }
 
-    /**
-     * Update marks for a single student and subject.
-     */
+
+    //Update marks for a single student and subject.
     @Transactional
     public void updateSingleStudentMarks(String rollNumber, String subjectName, int theoryMarks, int iaMarks, int labMarks) {
         Student student = studentRepository.findByRollNumber(rollNumber)
@@ -212,9 +242,7 @@ public class ScoreService {
         logger.info("Updated marks for student {}", rollNumber);
     }
 
-    /**
-     * Bulk update marks for multiple students from a CSV file.
-     */
+    //Bulk update marks for multiple students from a CSV file.
     @Transactional
     public void updateMarksFromCSV(MultipartFile file) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
@@ -256,5 +284,41 @@ public class ScoreService {
             logger.error("Error processing file: {}", e.getMessage(), e);
             throw new RuntimeException("Error processing CSV file");
         }
+    }
+    
+    //Delete Score for a student of a subject
+    @Transactional
+    public void deleteScoreForStudent(Long studentId, Long subjectId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        Subject subject = subjectRepository.findById(subjectId)
+                .orElseThrow(() -> new RuntimeException("Subject not found"));
+
+        scoreRepository.deleteByStudentAndSubject(student, subject);
+    }
+
+    //Delete scores of all subjects for a student
+    @Transactional
+    public void deleteAllScoresForStudent(Long studentId) {
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        scoreRepository.deleteByStudent(student);
+    }
+
+    //Delete score of a subject for all the students
+    @Transactional
+    public void deleteScoreForAllStudents(Long subjectId) {
+        Subject subject = subjectRepository.findById(subjectId)
+                .orElseThrow(() -> new RuntimeException("Subject not found"));
+
+        scoreRepository.deleteBySubject(subject);
+    }
+
+    //Delete scores of all students for all subjects
+    @Transactional
+    public void deleteAllScores() {
+        scoreRepository.deleteAll();
     }
 }

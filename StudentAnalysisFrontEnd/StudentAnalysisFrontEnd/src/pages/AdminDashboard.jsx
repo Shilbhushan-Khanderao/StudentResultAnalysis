@@ -58,6 +58,18 @@ const AdminDashboard = () => {
           </Link>
         </div>
 
+        <div className="col-md-4">
+          <Link
+            to="/score-management"
+            className="card text-center p-3 mb-3 shadow-sm d-flex justify-content-between align-items-center"
+          >
+            <div>
+              <h5>Score Management</h5>
+              <p>Manage all score related stuff.</p>
+            </div>
+          </Link>
+        </div>
+
         {/* Rankings - Admin Only */}
         <div className="col-md-4">
           <Link
@@ -80,43 +92,6 @@ const AdminDashboard = () => {
             <div>
               <h5>Reports</h5>
               <p>Generate student and batch reports.</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Marks Upload - Accessible by Admin & Teacher */}
-        <div className="col-md-4">
-          <Link
-            to="/marks/upload"
-            className="card text-center p-3 mb-3 shadow-sm d-flex justify-content-between align-items-center"
-          >
-            <div>
-              <h5>Marks Upload</h5>
-              <p>Upload marks for students.</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Marks Update - Accessible by Admin & Teacher */}
-        <div className="col-md-4">
-          <Link
-            to="/marks/update"
-            className="card text-center p-3 mb-3 shadow-sm d-flex justify-content-between align-items-center"
-          >
-            <div>
-              <h5>Marks Update</h5>
-              <p>Modify student marks.</p>
-            </div>
-          </Link>
-        </div>
-        <div className="col-md-4">
-          <Link
-            to="/marksheet"
-            className="card text-center p-3 mb-3 shadow-sm d-flex justify-content-between align-items-center"
-          >
-            <div>
-              <h5>Marksheet</h5>
-              <p>View marksheet.</p>
             </div>
           </Link>
         </div>

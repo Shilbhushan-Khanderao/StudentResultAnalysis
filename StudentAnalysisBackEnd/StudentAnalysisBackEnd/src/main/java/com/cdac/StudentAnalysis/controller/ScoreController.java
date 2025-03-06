@@ -29,12 +29,20 @@ public class ScoreController {
         return ResponseEntity.ok(new ApiResponse("All scores retrieved successfully", scores));
     }
     
-    //Fetch Marksheet Data
+    //Fetch Marksheet data
     @GetMapping("/marksheet")
     public ResponseEntity<ApiResponse> getMarksheet(@RequestParam Long batchId) {
         List<Map<String, Object>> marksheet = scoreService.getFormattedMarksheet(batchId);
         return ResponseEntity.ok(new ApiResponse("Marksheet for batch retrieved successfully", marksheet));
     }
+    
+    //Fetch Marksheet data for subjects
+    @GetMapping("/marksheet/subjects")
+    public ResponseEntity<ApiResponse> getMarksheetForSubjects(@RequestParam Long batchId, @RequestParam List<Long> subjectIds) {
+        List<Map<String, Object>> marksheet = scoreService.getMarksheetForSubjects(batchId, subjectIds);
+        return ResponseEntity.ok(new ApiResponse("Marksheet for selected subjects retrieved successfully", marksheet));
+    }
+
     
     //Fetch all scores for a specific student by roll number.
     @GetMapping("/student/{rollNumber}")
@@ -79,4 +87,30 @@ public class ScoreController {
         scoreService.updateMarksFromCSV(file);
         return ResponseEntity.ok(new ApiResponse("Bulk marks updated successfully", null));
     }
+    
+    
+    @DeleteMapping("/student/{studentId}/subject/{subjectId}")
+    public ResponseEntity<ApiResponse> deleteScoreForStudent(@PathVariable Long studentId, @PathVariable Long subjectId) {
+        scoreService.deleteScoreForStudent(studentId, subjectId);
+        return ResponseEntity.ok(new ApiResponse("Score deleted successfully for the student", null));
+    }
+
+    @DeleteMapping("/student/{studentId}/all")
+    public ResponseEntity<ApiResponse> deleteAllScoresForStudent(@PathVariable Long studentId) {
+        scoreService.deleteAllScoresForStudent(studentId);
+        return ResponseEntity.ok(new ApiResponse("All scores deleted for the student", null));
+    }
+
+    @DeleteMapping("/subject/{subjectId}/all")
+    public ResponseEntity<ApiResponse> deleteScoreForAllStudents(@PathVariable Long subjectId) {
+        scoreService.deleteScoreForAllStudents(subjectId);
+        return ResponseEntity.ok(new ApiResponse("Scores deleted for all students in the subject", null));
+    }
+
+    @DeleteMapping("/all")
+    public ResponseEntity<ApiResponse> deleteAllScores() {
+        scoreService.deleteAllScores();
+        return ResponseEntity.ok(new ApiResponse("All scores deleted successfully", null));
+    }
+
 }

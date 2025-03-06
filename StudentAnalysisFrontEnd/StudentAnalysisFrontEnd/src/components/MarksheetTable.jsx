@@ -10,9 +10,6 @@ import {
   Button,
   TextField,
   MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
 } from "@mui/material";
 
 const MarksheetTable = () => {

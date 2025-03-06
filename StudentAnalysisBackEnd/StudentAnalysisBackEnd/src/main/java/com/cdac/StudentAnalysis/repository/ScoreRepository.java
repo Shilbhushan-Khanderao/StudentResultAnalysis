@@ -6,6 +6,7 @@ import com.cdac.StudentAnalysis.model.Subject;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,4 +38,16 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     
     @Query("SELECT s.student, SUM(s.theoryMarks + s.iaMarks + s.labMarks) FROM Score s GROUP BY s.student")
     List<Object[]> getStudentTotalMarks();
+    
+    
+    @Transactional
+    void deleteByStudentAndSubject(Student student, Subject subject);
+
+    @Transactional
+    void deleteByStudent(Student student);
+
+    @Transactional
+    void deleteBySubject(Subject subject);
+
+    List<Score> findScoresByStudent_Batch_Id(Long batchId);
 }
