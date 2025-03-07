@@ -2,6 +2,7 @@ import axios from "./axios";
 
 export const getSubjects = async () => {
   const response = await axios.get(`/subjects`);
+  console.log(response.data);
   return response.data;
 };
 

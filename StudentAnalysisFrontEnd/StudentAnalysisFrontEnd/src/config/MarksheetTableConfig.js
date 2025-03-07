@@ -1,4 +1,4 @@
-export const subjects = [
+export const subjectsList = [
   "CPP",
   "OOPJ",
   "ADS",
@@ -16,7 +16,7 @@ export const getColumns = () => [
     header: "Student Name",
     muiTableBodyCellProps: { align: "left" },
   },
-  ...subjects.flatMap((sub) => {
+  ...subjectsList.flatMap((sub) => {
     const sanitizedSub = sub.replace(".", "_");
     return [
       { accessorKey: `${sanitizedSub}_TH`, header: `${sub} TH` },

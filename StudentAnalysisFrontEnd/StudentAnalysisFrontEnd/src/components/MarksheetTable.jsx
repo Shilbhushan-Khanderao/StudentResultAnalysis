@@ -6,22 +6,18 @@ import {
   MaterialReactTable,
   useMaterialReactTable,
 } from "material-react-table";
-import {
-  Button,
-  TextField,
-  MenuItem,
-} from "@mui/material";
+import { Button, TextField, MenuItem } from "@mui/material";
 
-const MarksheetTable = () => {
+const MarksheetTable = ({ data }) => {
   const [mainTitle, setMainTitle] = useState("PG-DAC | CDAC MUMBAI");
   const [subTitle, setSubTitle] = useState("Integrated Marksheet");
-  const [batchId, setBatchId] = useState("");
 
-  const { marksheet, batches } = useMarksheet(batchId);
+  if (!data || data.length === 0) return <p>No data available.</p>;
+  const columns = getColumns(data);
 
   const table = useMaterialReactTable({
-    columns: getColumns(),
-    data: marksheet,
+    columns,
+    data,
     enableColumnFilters: true,
     enableSorting: true,
     enablePagination: true,
@@ -30,21 +26,6 @@ const MarksheetTable = () => {
 
   return (
     <div style={{ maxWidth: "95%", margin: "auto", marginTop: 20 }}>
-      <TextField
-        select
-        label="Select Batch"
-        value={batchId}
-        onChange={(e) => setBatchId(e.target.value)}
-        variant="outlined"
-        style={{ margin: "5px", width: "200px" }}
-      >
-        {batches.map((batch) => (
-          <MenuItem key={batch.id} value={batch.id}>
-            {batch.batchName}
-          </MenuItem>
-        ))}
-      </TextField>
-
       <TextField
         label="Main Title"
         value={mainTitle}
@@ -61,7 +42,7 @@ const MarksheetTable = () => {
       <Button
         variant="contained"
         color="primary"
-        onClick={() => exportToPdf(marksheet, mainTitle, subTitle)}
+        onClick={() => exportToPdf(data, mainTitle, subTitle)}
         style={{ margin: "5px" }}
       >
         Export to PDF
@@ -69,7 +50,7 @@ const MarksheetTable = () => {
       <Button
         variant="contained"
         color="secondary"
-        onClick={() => exportToExcel(marksheet)}
+        onClick={() => exportToExcel(data)}
         style={{ margin: "5px" }}
       >
         Export to Excel

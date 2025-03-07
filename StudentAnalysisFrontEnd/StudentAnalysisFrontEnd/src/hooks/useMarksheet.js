@@ -1,27 +1,31 @@
 import { useEffect, useState } from "react";
-import { fetchMarksheet } from "../api/marks";
+import { fetchMarksheet, fetchMarksheetForSubjects } from "../api/marks";
 import { getBatches } from "../api/batches";
-import { subjects } from "../config/MarksheetTableConfig";
+import { getSubjects } from "../api/subjects";
+import { subjectsList } from "../config/MarksheetTableConfig";
 
 export const useMarksheet = (batchId) => {
   const [marksheet, setMarksheet] = useState([]);
   const [batches, setBatches] = useState([]);
+  const [subjects, setSubjects] = useState([]);
 
   useEffect(() => {
     getBatches().then(setBatches);
+    getSubjects().then(setSubjects);
   }, []);
 
-  useEffect(() => {
-    if (batchId) {
-      fetchMarksheet(batchId).then((data) => {
+  const fetchBatchMarksheet = async (batchId) => {
+    if (!batchId) return;
+    try {
+      await fetchMarksheet(batchId).then((data) => {
+        console.log("Whole Marksheet Data", data);
         const flattenedData = data.map((student) => {
-
           const flatStudent = {
             "Student ID": student["Student ID"],
             "Student Name": student["Student Name"],
           };
 
-          subjects.forEach((sub) => {
+          subjectsList.forEach((sub) => {
             if (student[sub]) {
               flatStudent[`${sub}_TH`] = student[sub].TH || "-";
               flatStudent[`${sub}_IA`] = student[sub].IA || "-";
@@ -38,11 +42,30 @@ export const useMarksheet = (batchId) => {
 
           return flatStudent;
         });
-
+        console.log("Flattened Marksheet Data", flattenedData);
         setMarksheet(flattenedData);
       });
+    } catch (error) {
+      console.error("Error fetching batch marksheet:", error);
     }
-  }, [batchId]);
+  };
 
-  return { marksheet, batches };
+  const fetchSubjectMarksheet = async (batchId, subjectIds) => {
+    if (!batchId || subjectIds.length === 0) return;
+    try {
+      const data = await fetchMarksheetForSubjects(batchId, subjectIds);
+      console.log("Whole Marksheet Data", data);
+      setMarksheet(data);
+    } catch (error) {
+      console.error("Error fetching subject-wise marksheet:", error);
+    }
+  };
+
+  return {
+    marksheet,
+    batches,
+    subjects,
+    fetchBatchMarksheet,
+    fetchSubjectMarksheet,
+  };
 };
