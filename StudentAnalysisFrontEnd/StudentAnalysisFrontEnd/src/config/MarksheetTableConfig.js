@@ -9,25 +9,28 @@ export const subjectsList = [
   "MS.NET",
 ];
 
-export const getColumns = () => [
-  { accessorKey: "Student ID", header: "Student ID" },
-  {
-    accessorKey: "Student Name",
-    header: "Student Name",
-    muiTableBodyCellProps: { align: "left" },
-  },
-  ...subjectsList.flatMap((sub) => {
-    const sanitizedSub = sub.replace(".", "_");
-    return [
-      { accessorKey: `${sanitizedSub}_TH`, header: `${sub} TH` },
-      { accessorKey: `${sanitizedSub}_IA`, header: `${sub} IA` },
-      { accessorKey: `${sanitizedSub}_Lab`, header: `${sub} LAB` },
-      { accessorKey: `${sanitizedSub}_TOT`, header: `${sub} TOT` },
-    ];
-  }),
-  { accessorKey: "Total", header: "Total" },
-  { accessorKey: "Percentage", header: "%" },
-  { accessorKey: "GAC", header: "GAC" },
-  { accessorKey: "Project", header: "Project" },
-  { accessorKey: "Rank", header: "Rank" },
-];
+export const getColumns = (data) => {
+  if (!data || data.length === 0) return [];
+
+  const baseColumns = [
+    { accessorKey: "Student ID", header: "Student ID" },
+    { accessorKey: "Student Name", header: "Student Name" },
+  ];
+
+  const subjectColumns = Object.keys(data[0])
+    .filter((key) => key.includes("_TH") || key.includes("_IA") || key.includes("_Lab") || key.includes("_TOT"))
+    .map((subject) => ({
+      accessorKey: subject,
+      header: subject.replace(/_/g, " "),
+    }));
+
+  const extraColumns = [
+    { accessorKey: "Total", header: "Total" },
+    { accessorKey: "Percentage", header: "%" },
+    { accessorKey: "GAC", header: "GAC" },
+    { accessorKey: "Project", header: "Project" },
+    { accessorKey: "Rank", header: "Rank" },
+  ];
+
+  return [...baseColumns, ...subjectColumns, ...extraColumns];
+};

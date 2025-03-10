@@ -98,7 +98,7 @@ const ScoreManagementPage = () => {
               Fetch Subject-Wise Marksheet
             </Button>
             {/* Display Marksheet */}
-            {marksheet.length > 0 && <MarksheetTable data={marksheet} />}
+            {marksheet.length > 0 && <MarksheetTable data={marksheet} isSubjectWise={tab === 3}/>}
           </>
         )}
       </Box>

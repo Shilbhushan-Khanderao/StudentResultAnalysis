@@ -23,7 +23,7 @@ export const fetchMarksheetForSubjects = async (batchId, subjectIds) => {
   const response = await axios.get(
     `/marks/marksheet/subjects?${queryParams.toString()}`
   );
-  return response.data;
+  return response.data.data;
 };
 
 // Upload single subject marks

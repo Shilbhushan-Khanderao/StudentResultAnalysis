@@ -1,19 +1,39 @@
-import React, { useState } from "react";
-import { useMarksheet } from "../hooks/useMarksheet";
+import React, { useState, useEffect } from "react";
 import { getColumns } from "../config/MarksheetTableConfig";
-import { exportToPdf, exportToExcel } from "../utils/exportUtils";
+import { exportToPdf,exportSubjectMarksheetToPdf, exportBatchMarksheetToExcel, exportSubjectMarksheetToExcel } from "../utils/exportUtils";
 import {
   MaterialReactTable,
   useMaterialReactTable,
 } from "material-react-table";
-import { Button, TextField, MenuItem } from "@mui/material";
+import { Button, TextField} from "@mui/material";
 
-const MarksheetTable = ({ data }) => {
+const MarksheetTable = ({ data, isSubjectWise }) => {
   const [mainTitle, setMainTitle] = useState("PG-DAC | CDAC MUMBAI");
   const [subTitle, setSubTitle] = useState("Integrated Marksheet");
+  const [columns, setColumns] = useState([]);
 
   if (!data || data.length === 0) return <p>No data available.</p>;
-  const columns = getColumns(data);
+  
+  useEffect(() => {
+    setColumns(getColumns(data));
+  }, [data]); 
+
+  const handlePdfExport = () => {
+    if (isSubjectWise) {
+      exportSubjectMarksheetToPdf(data, mainTitle, subTitle);
+    } else {
+      exportToPdf(data, mainTitle, subTitle);
+    }
+  };
+
+  const handleExcelExport = () => {
+    if (isSubjectWise) {
+      exportSubjectMarksheetToExcel(data);
+    } else {
+      exportBatchMarksheetToExcel(data);
+    }
+  };
+  
 
   const table = useMaterialReactTable({
     columns,
@@ -42,7 +62,7 @@ const MarksheetTable = ({ data }) => {
       <Button
         variant="contained"
         color="primary"
-        onClick={() => exportToPdf(data, mainTitle, subTitle)}
+        onClick={handlePdfExport}
         style={{ margin: "5px" }}
       >
         Export to PDF
@@ -50,7 +70,7 @@ const MarksheetTable = ({ data }) => {
       <Button
         variant="contained"
         color="secondary"
-        onClick={() => exportToExcel(data)}
+        onClick={handleExcelExport}
         style={{ margin: "5px" }}
       >
         Export to Excel

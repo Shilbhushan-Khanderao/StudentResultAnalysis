@@ -77,7 +77,7 @@ const AdminDashboard = () => {
             className="card text-center p-3 mb-3 shadow-sm d-flex justify-content-between align-items-center"
           >
             <div>
-              <h5>Rankings</h5>
+              <h5>Ranking Management</h5>
               <p>Calculate and view student rankings.</p>
             </div>
           </Link>

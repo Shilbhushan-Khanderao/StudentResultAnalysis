@@ -3,10 +3,12 @@ package com.cdac.StudentAnalysis.service;
 import com.cdac.StudentAnalysis.model.Ranking;
 import com.cdac.StudentAnalysis.model.RankingHistory;
 import com.cdac.StudentAnalysis.model.Student;
+import com.cdac.StudentAnalysis.model.Subject;
 import com.cdac.StudentAnalysis.repository.RankingHistoryRepository;
 import com.cdac.StudentAnalysis.repository.RankingRepository;
 import com.cdac.StudentAnalysis.repository.ScoreRepository;
 import com.cdac.StudentAnalysis.repository.StudentRepository;
+import com.cdac.StudentAnalysis.repository.SubjectRepository;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,13 +26,15 @@ public class RankingService {
     private final StudentRepository studentRepository;
     private final ScoreRepository scoreRepository;
     private final RankingHistoryRepository rankingHistoryRepository;
+    private final SubjectRepository subjectRepository;
 
     public RankingService(RankingRepository rankingRepository, StudentRepository studentRepository,
-                          ScoreRepository scoreRepository, RankingHistoryRepository rankingHistoryRepository) {
+                          ScoreRepository scoreRepository, RankingHistoryRepository rankingHistoryRepository, SubjectRepository subjectRepository) {
         this.rankingRepository = rankingRepository;
         this.studentRepository = studentRepository;
         this.scoreRepository = scoreRepository;
         this.rankingHistoryRepository = rankingHistoryRepository;
+        this.subjectRepository = subjectRepository;
     }
 
     //Calculate and update ranks for all students.
@@ -39,16 +43,18 @@ public class RankingService {
         // Fetch all scores in one query to avoid N+1 problem
         List<Object[]> results = scoreRepository.getStudentTotalMarks(); // Custom query to fetch total marks per student
 
+     // Fetch all subjects and determine max possible marks dynamically
+        int maxMarks = subjectRepository.findAll().stream()
+            .mapToInt(subject -> determineSubjectMax(subject)) // Dynamic max marks calculation
+            .sum();
+        
         Map<Student, Integer> marksMap = new HashMap<>();
-        boolean hasTheoryMarks = false;
+        
 
         // Prepare data for ranking
         for (Object[] result : results) {
             Student student = (Student) result[0];
             int totalMarks = ((Number) result[1]).intValue();
-
-            // Detect if theory marks are present
-            hasTheoryMarks = hasTheoryMarks || totalMarks > 60;
             marksMap.put(student, totalMarks);
         }
 
@@ -56,7 +62,7 @@ public class RankingService {
         List<RankingHistory> rankingHistories = new ArrayList<>();
 
         // Rank students based on total marks
-        rankStudents(marksMap, updatedRankings, rankingHistories, hasTheoryMarks);
+        rankStudents(marksMap, updatedRankings, rankingHistories, maxMarks);
 
         // Batch save updated rankings and ranking history
         rankingRepository.saveAll(updatedRankings);
@@ -64,7 +70,7 @@ public class RankingService {
     }
 
     //Rank students based on total marks and maintain ranking history.
-    private void rankStudents(Map<Student, Integer> marksMap, List<Ranking> rankings, List<RankingHistory> histories, boolean hasTheoryMarks) {
+    private void rankStudents(Map<Student, Integer> marksMap, List<Ranking> rankings, List<RankingHistory> histories, int maxMarks) {
         // Preload existing rankings for efficient access
         List<Ranking> existingRankings = rankingRepository.findAll();
         Map<Long, Ranking> studentRankMap = new HashMap<>();
@@ -77,42 +83,34 @@ public class RankingService {
                 .sorted(Map.Entry.<Student, Integer>comparingByValue().reversed())
                 .toList();
 
-        int rank = 1;
+        int rank = 0;
+        int displayedRank = 0;
         int lastMarks = -1;
-        int lastRank = 0;
-        int maxMarks = hasTheoryMarks ? 100 : 60;
 
         for (Map.Entry<Student, Integer> entry : sortedStudents) {
+            rank++;
+
+            if (entry.getValue() != lastMarks) {
+                displayedRank = rank;
+            }
+            lastMarks = entry.getValue();
+
             Student student = entry.getKey();
             int totalMarks = entry.getValue();
 
-            // Handle ties (same marks → same rank)
-            if (totalMarks == lastMarks) {
-                rank = lastRank;
-            } else {
-                lastRank = rank;
-            }
-            lastMarks = totalMarks;
-
-            // Use preloaded ranking or create new
-            Ranking ranking = studentRankMap.getOrDefault(student.getId(), new Ranking());
+            Ranking ranking = rankingRepository.findByStudent(student).orElse(new Ranking());
             ranking.setStudent(student);
-
-            int previousRank = ranking.getCurrentRank() == 0 ? rank : ranking.getCurrentRank();
-            ranking.setCurrentRank(rank++);
+            ranking.setCurrentRank(displayedRank);
             ranking.setPercentage((totalMarks * 100.0) / maxMarks);
 
-            rankings.add(ranking); // Add to batch save
+            rankings.add(ranking);
 
-            // Save ranking history only if rank changed
-            if (previousRank != ranking.getCurrentRank()) {
-                histories.add(RankingHistory.builder()
-                        .student(student)
-                        .previousPercentage(ranking.getPercentage())
-                        .oldRank(previousRank)
-                        .newRank(ranking.getCurrentRank())
-                        .timestamp(LocalDateTime.now())
-                        .build());
+            Optional<RankingHistory> lastHistory = rankingHistoryRepository.findTopByStudentOrderByTimestampDesc(student);
+            if (lastHistory.isEmpty() || lastHistory.get().getNewRank() != displayedRank) {
+                histories.add(new RankingHistory(
+                    null, student, lastHistory.map(RankingHistory::getNewRank).orElse(0), displayedRank,
+                    ranking.getPercentage(), LocalDateTime.now()
+                ));
             }
         }
     }
@@ -161,4 +159,15 @@ public class RankingService {
     public List<RankingHistory> getRankComparison(Long studentId) {
         return rankingHistoryRepository.findRankHistoryByStudent(studentId);
     }
+    
+    private int determineSubjectMax(Subject subject) {
+        boolean hasTheoryMarks = scoreRepository.existsBySubjectAndTheoryMarksGreaterThan(subject, 0);
+        
+        if (subject.getType().equalsIgnoreCase("COMBINED")) {
+            return 30; // Combined subject type max marks
+        }
+        
+        return hasTheoryMarks ? 100 : 60; // 100 if TH exists, else 60
+    }
+
 }

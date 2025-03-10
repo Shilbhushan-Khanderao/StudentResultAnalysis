@@ -15,6 +15,9 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 	
 	List<Score> findAll();
 	
+	@Query("SELECT COUNT(s) > 0 FROM Score s WHERE s.subject = :subject AND s.theoryMarks > 0")
+	boolean existsBySubjectAndTheoryMarksGreaterThan(@Param("subject") Subject subject, int minTheoryMarks);
+	
 	@Query("SELECT s FROM Score s WHERE s.student.batch.id = :batchId")
 		List<Score> findScoresByBatch(@Param("batchId") Long batchId);
 

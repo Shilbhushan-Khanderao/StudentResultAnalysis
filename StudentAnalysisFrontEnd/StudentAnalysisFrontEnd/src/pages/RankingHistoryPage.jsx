@@ -2,9 +2,6 @@ import React, { useState, useEffect } from "react";
 import { getRankingHistory, getRankComparison } from "../api/rankings";
 import { Line } from "react-chartjs-2";
 import {
-  FormControl,
-  InputLabel,
-  Select,
   MenuItem,
   Button,
   TextField,

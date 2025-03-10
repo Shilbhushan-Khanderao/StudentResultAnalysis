@@ -88,37 +88,142 @@ export const exportToPdf = (marksheet, mainTitle, subTitle) => {
   doc.save("Integrated_Marksheet.pdf");
 };
 
-export const exportToExcel = () => {
-  // Create an array to hold our Excel data with the same structure as the PDF
+export const exportSubjectMarksheetToPdf = (marksheet, mainTitle, subTitle) => {
+  if (!marksheet || marksheet.length === 0) {
+    console.error("No data available for PDF export.");
+    return;
+  }
+
+  const doc = new jsPDF("portrait", "pt", "a4");
+  doc.setFontSize(18);
+  doc.text(mainTitle, doc.internal.pageSize.getWidth() / 2, 30, {
+    align: "center",
+  });
+  doc.setFontSize(12);
+  doc.text(subTitle, doc.internal.pageSize.getWidth() / 2, 50, {
+    align: "center",
+  });
+
+  // Extract selected subjects dynamically from the first student object
+  const availableSubjects = [
+    ...new Set(
+      Object.keys(marksheet[0])
+        .filter((key) => key.includes("_TH") || key.includes("_IA") || key.includes("_Lab") || key.includes("_TOT"))
+        .map((key) => key.split("_")[0])
+    ),
+  ];
+
+  console.log("Subjects included in Subject-Wise Marksheet:", availableSubjects);
+
+  const headRows = [
+    [
+      "Student ID",
+      "Student Name",
+      ...availableSubjects.map((sub) => ({
+        content: sub,
+        colSpan: 4,
+        styles: { halign: "center", fillColor: [200, 200, 255] },
+      })),
+    ],
+    [
+      "",
+      "",
+      ...availableSubjects.flatMap(() => ["TH", "IA", "LAB", "TOT"]),
+    ],
+  ];
+
+  const bodyRows = marksheet.map((student) => [
+    student["Student ID"],
+    student["Student Name"],
+    ...availableSubjects.flatMap((sub) => [
+      student[`${sub}_TH`] ?? "-",
+      student[`${sub}_IA`] ?? "-",
+      student[`${sub}_Lab`] ?? "-",
+      student[`${sub}_TOT`] ?? "-",
+    ]),
+  ]);
+
+  autoTable(doc, {
+    head: headRows,
+    body: bodyRows,
+    startY: 60,
+    styles: {
+      fontSize: 7,
+      cellPadding: 2,
+      halign: "center",
+      lineWidth: 0.5,
+    },
+    headStyles: {
+      fillColor: [41, 128, 185],
+      textColor: 255,
+      lineColor: [0, 0, 0],
+      lineWidth: 0.5,
+    },
+    bodyStyles: {
+      lineColor: [0, 0, 0],
+    },
+    tableLineColor: [0, 0, 0],
+    tableLineWidth: 0.5,
+    columnStyles: {
+      1: { halign: "left" },
+    },
+    didParseCell: function (data) {
+      if (data.row.index >= 0) {
+        // Get the column header name (TH, IA, LAB, TOT)
+        const columnHeader = headRows[1][data.column.index];
+  
+        // Define passing thresholds based on max marks
+        const passingThresholds = {
+          "TH": 40 * 0.4,
+          "IA": 20 * 0.4, 
+          "LAB": 40 * 0.4,
+          "TOT": 100 * 0.4,
+        };
+  
+        if (passingThresholds[columnHeader] !== undefined) {
+          const cellValue = parseFloat(data.cell.text[0]); // Convert text to number
+  
+          if (cellValue === "-" || (!isNaN(parseFloat(cellValue)) && parseFloat(cellValue) < passingThresholds[columnHeader])) {
+            data.cell.styles.fillColor = [255, 182, 182]; // Light red color for failed marks
+          }
+        }
+      }
+    },
+  });
+
+  doc.save("Subject_Wise_Marksheet.pdf");
+};
+
+
+export const exportBatchMarksheetToExcel = (data) => {
+  if (!data || data.length === 0) {
+    console.error("No data available for Excel export.");
+    return;
+  }
+
+  // Create the first header row with subjects and extra columns
   const headerRow1 = ["Student ID", "Student Name"];
 
-  // Add subject headers with merged cells (represented by empty strings for Excel)
   subjectsList.forEach((sub) => {
     headerRow1.push(sub, "", "", "");
   });
 
-  // Add the remaining headers
+  // Add extra columns
   headerRow1.push("TOTAL", "%", "GAC", "Project", "Rank");
 
-  // Create the second header row
-  const headerRow2 = [
-    "", // Empty cells for Student ID and Student Name
-    "",
-  ];
+  // Create the second header row for sub-columns
+  const headerRow2 = ["", ""]; // Empty cells for Student ID and Student Name
 
-  // Add the sub-headers for each subject
   subjectsList.forEach(() => {
     headerRow2.push("TH", "IA", "LAB", "TOT");
   });
 
-  // Add empty cells for the remaining headers
-  headerRow2.push("", "", "", "", "");
+  headerRow2.push("", "", "", "", ""); // Empty placeholders for extra columns
 
   // Create data rows
-  const dataRows = marksheet.map((student) => {
+  const dataRows = data.map((student) => {
     const row = [student["Student ID"], student["Student Name"]];
 
-    // Add subject data
     subjectsList.forEach((sub) => {
       const sanitizedSub = sub.replace(".", "_");
       row.push(
@@ -129,7 +234,7 @@ export const exportToExcel = () => {
       );
     });
 
-    // Add remaining data
+    // Add extra columns
     row.push(
       student["Total"] ?? "-",
       student["Percentage"] ?? "-",
@@ -153,14 +258,12 @@ export const exportToExcel = () => {
     { wch: 20 }, // Student Name
   ];
 
-  // Add column widths for subjects (4 columns each)
   subjectsList.forEach(() => {
     for (let i = 0; i < 4; i++) {
       columnWidths.push({ wch: 8 });
     }
   });
 
-  // Add column widths for remaining columns
   columnWidths.push(
     { wch: 10 }, // Total
     { wch: 8 }, // %
@@ -171,8 +274,8 @@ export const exportToExcel = () => {
 
   worksheet["!cols"] = columnWidths;
 
+  // Merge subject headers
   const merges = [];
-
   let colIndex = 2;
   subjectsList.forEach(() => {
     merges.push({
@@ -184,9 +287,94 @@ export const exportToExcel = () => {
 
   worksheet["!merges"] = merges;
 
-  // Create workbook and add worksheet
+  // Create workbook and save
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Marksheet");
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Batch Marksheet");
 
-  XLSX.writeFile(workbook, "Integrated_Marksheet.xlsx");
+  XLSX.writeFile(workbook, "Batch_Wise_Marksheet.xlsx");
+};
+
+export const exportSubjectMarksheetToExcel = (marksheet) => {
+  if (!marksheet || marksheet.length === 0) {
+    console.error("No data available for Excel export.");
+    return;
+  }
+
+  // Extract subjects dynamically from data keys
+  const availableSubjects = [
+    ...new Set(
+      Object.keys(marksheet[0])
+        .filter((key) => key.includes("_TH") || key.includes("_IA") || key.includes("_Lab") || key.includes("_TOT"))
+        .map((key) => key.split("_")[0])
+    ),
+  ];
+
+  console.log("Subjects included in Subject-Wise Marksheet:", availableSubjects);
+
+  // Create first header row
+  const headerRow1 = ["Student ID", "Student Name"];
+  availableSubjects.forEach((sub) => {
+    headerRow1.push(sub, "", "", "");
+  });
+
+  // Create second header row (TH, IA, LAB, TOT)
+  const headerRow2 = ["", ""];
+  availableSubjects.forEach(() => {
+    headerRow2.push("TH", "IA", "LAB", "TOT");
+  });
+
+  // Create data rows
+  const dataRows = marksheet.map((student) => {
+    const row = [student["Student ID"], student["Student Name"]];
+
+    availableSubjects.forEach((sub) => {
+      row.push(
+        student[`${sub}_TH`] ?? "-",
+        student[`${sub}_IA`] ?? "-",
+        student[`${sub}_Lab`] ?? "-",
+        student[`${sub}_TOT`] ?? "-"
+      );
+    });
+
+    return row;
+  });
+
+  // Combine all rows for the worksheet
+  const allRows = [headerRow1, headerRow2, ...dataRows];
+
+  // Create worksheet
+  const worksheet = XLSX.utils.aoa_to_sheet(allRows);
+
+  // Set column widths
+  const columnWidths = [
+    { wch: 15 }, // Student ID
+    { wch: 20 }, // Student Name
+  ];
+
+  availableSubjects.forEach(() => {
+    for (let i = 0; i < 4; i++) {
+      columnWidths.push({ wch: 8 });
+    }
+  });
+
+  worksheet["!cols"] = columnWidths;
+
+  // Merge subject headers
+  const merges = [];
+  let colIndex = 2;
+  availableSubjects.forEach(() => {
+    merges.push({
+      s: { r: 0, c: colIndex },
+      e: { r: 0, c: colIndex + 3 },
+    });
+    colIndex += 4;
+  });
+
+  worksheet["!merges"] = merges;
+
+  // Create workbook and save
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Subject Marksheet");
+
+  XLSX.writeFile(workbook, "Subject_Wise_Marksheet.xlsx");
 };
