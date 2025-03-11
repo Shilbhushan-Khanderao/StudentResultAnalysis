@@ -82,13 +82,14 @@ const DeleteScores = () => {
         variant="contained"
         color="primary"
         onClick={() => handleDeleteScore("single")}
+        sx={{ m: 1 }}
       >
         Delete Score for Selected Student & Subject
       </Button>
       <Button
         variant="contained"
         color="secondary"
-        sx={{ m: 1 }}
+        sx={{ m:1 }}
         onClick={() => handleDeleteScore("allStudent")}
       >
         Delete All Scores for Selected Student
@@ -104,8 +105,8 @@ const DeleteScores = () => {
       <Button
         variant="contained"
         color="error"
-        sx={{ m: 1 }}
         onClick={() => handleDeleteScore("all")}
+        sx={{ m: 1 }}
       >
         Delete All Scores
       </Button>

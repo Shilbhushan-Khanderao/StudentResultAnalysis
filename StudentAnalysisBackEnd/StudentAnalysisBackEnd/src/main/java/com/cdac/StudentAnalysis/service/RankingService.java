@@ -9,6 +9,7 @@ import com.cdac.StudentAnalysis.repository.RankingRepository;
 import com.cdac.StudentAnalysis.repository.ScoreRepository;
 import com.cdac.StudentAnalysis.repository.StudentRepository;
 import com.cdac.StudentAnalysis.repository.SubjectRepository;
+import com.cdac.StudentAnalysis.utils.MarksheetUtils;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,14 +28,16 @@ public class RankingService {
     private final ScoreRepository scoreRepository;
     private final RankingHistoryRepository rankingHistoryRepository;
     private final SubjectRepository subjectRepository;
+    private final MarksheetUtils marksheetUtils;
 
     public RankingService(RankingRepository rankingRepository, StudentRepository studentRepository,
-                          ScoreRepository scoreRepository, RankingHistoryRepository rankingHistoryRepository, SubjectRepository subjectRepository) {
+                          ScoreRepository scoreRepository, RankingHistoryRepository rankingHistoryRepository, SubjectRepository subjectRepository, MarksheetUtils marksheetUtils) {
         this.rankingRepository = rankingRepository;
         this.studentRepository = studentRepository;
         this.scoreRepository = scoreRepository;
         this.rankingHistoryRepository = rankingHistoryRepository;
         this.subjectRepository = subjectRepository;
+        this.marksheetUtils = marksheetUtils;
     }
 
     //Calculate and update ranks for all students.
@@ -45,8 +48,8 @@ public class RankingService {
 
      // Fetch all subjects and determine max possible marks dynamically
         int maxMarks = subjectRepository.findAll().stream()
-            .mapToInt(subject -> determineSubjectMax(subject)) // Dynamic max marks calculation
-            .sum();
+                .mapToInt(marksheetUtils::determineSubjectMax)
+                .sum();
         
         Map<Student, Integer> marksMap = new HashMap<>();
         
@@ -115,7 +118,6 @@ public class RankingService {
         }
     }
 
-
     //Get all current rankings.
     @Transactional(readOnly = true)
     public List<Ranking> getAllRankings() {
@@ -138,14 +140,12 @@ public class RankingService {
         return rankingHistoryRepository.findRankHistoryByStudent(studentId);
     }
 
-    
     //Get top N students by rank.
     @Transactional(readOnly = true)
     public List<Ranking> getTopRankers(int limit) {
         Pageable pageable = PageRequest.of(0, limit, Sort.by("currentRank").ascending());
         return rankingRepository.findTopRankers(pageable);
     }
-
     
     //Get rankings for a specific batch.
     @Transactional(readOnly = true)
@@ -153,21 +153,9 @@ public class RankingService {
         return rankingRepository.findRankingsByBatch(batchId);
     }
 
-
     //Compare current and past rankings for a specific student.
     @Transactional(readOnly = true)
     public List<RankingHistory> getRankComparison(Long studentId) {
         return rankingHistoryRepository.findRankHistoryByStudent(studentId);
     }
-    
-    private int determineSubjectMax(Subject subject) {
-        boolean hasTheoryMarks = scoreRepository.existsBySubjectAndTheoryMarksGreaterThan(subject, 0);
-        
-        if (subject.getType().equalsIgnoreCase("COMBINED")) {
-            return 30; // Combined subject type max marks
-        }
-        
-        return hasTheoryMarks ? 100 : 60; // 100 if TH exists, else 60
-    }
-
 }

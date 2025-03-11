@@ -23,6 +23,8 @@ export const useMarksheet = (batchId) => {
           const flatStudent = {
             "Student ID": student["Student ID"],
             "Student Name": student["Student Name"],
+            "Total": student["Total"], 
+            "Percentage": student["Percentage"], 
           };
 
           subjectsList.forEach((sub) => {
@@ -34,8 +36,6 @@ export const useMarksheet = (batchId) => {
             }
           });
 
-          flatStudent["Total"] = student.Total || 0;
-          flatStudent["Percentage"] = student.Percentage || "0.00";
           flatStudent["GAC"] = student.GAC || "-";
           flatStudent["Project"] = student.Project || "-";
           flatStudent["Rank"] = student.Rank || "-";

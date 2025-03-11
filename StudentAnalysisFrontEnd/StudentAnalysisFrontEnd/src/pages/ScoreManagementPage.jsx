@@ -39,9 +39,7 @@ const ScoreManagementPage = () => {
       </Tabs>
 
       <Box mt={3}>
-        {tab === 0 && <UploadMarks />}
-        {tab === 1 && <DeleteScores />}
-        <TextField
+      <TextField
           select
           label="Select Batch"
           value={selectedBatch}
@@ -55,7 +53,8 @@ const ScoreManagementPage = () => {
             </MenuItem>
           ))}
         </TextField>
-
+        {tab === 0 && <UploadMarks />}
+        {tab === 1 && <DeleteScores />}
         {tab === 2 && (
           <>
             <Button

@@ -8,6 +8,7 @@ import com.cdac.StudentAnalysis.model.Subject;
 import com.cdac.StudentAnalysis.repository.ScoreRepository;
 import com.cdac.StudentAnalysis.repository.StudentRepository;
 import com.cdac.StudentAnalysis.repository.SubjectRepository;
+import com.cdac.StudentAnalysis.utils.MarksheetUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +32,13 @@ public class ScoreService {
     private final ScoreRepository scoreRepository;
     private final StudentRepository studentRepository;
     private final SubjectRepository subjectRepository;
+    private final MarksheetUtils marksheetUtils;
 
-    public ScoreService(ScoreRepository scoreRepository, StudentRepository studentRepository, SubjectRepository subjectRepository) {
+    public ScoreService(ScoreRepository scoreRepository, StudentRepository studentRepository, SubjectRepository subjectRepository, MarksheetUtils marksheetUtils) {
         this.scoreRepository = scoreRepository;
         this.studentRepository = studentRepository;
         this.subjectRepository = subjectRepository;
+        this.marksheetUtils = marksheetUtils;
     }
     
     /**
@@ -50,6 +53,10 @@ public class ScoreService {
     //Get Marksheet for all students of a batch
     public List<Map<String, Object>> getFormattedMarksheet(Long batchId) {
         List<Score> scores = scoreRepository.findScoresByBatch(batchId);
+        
+        int totalMaxMarks = subjectRepository.findAll().stream()
+                .mapToInt(marksheetUtils::determineSubjectMax)
+                .sum();
         
         Map<String, Map<String, Object>> studentMap = new LinkedHashMap<>();
 
@@ -73,7 +80,17 @@ public class ScoreService {
                 "Lab", score.getLabMarks(),
                 "TOT", score.getTheoryMarks() + score.getIaMarks() + score.getLabMarks()
             ));
+            
+            int existingTotal = (int) studentData.getOrDefault("Total", 0);
+            studentData.put("Total", existingTotal + score.getTotalMarks());
         }
+        
+        studentMap.forEach((studentId, studentData) -> {
+            int totalMarks = (int) studentData.getOrDefault("Total", 0);
+            double percentage = totalMaxMarks > 0 ? (totalMarks * 100.0) / totalMaxMarks : 0.0;
+            studentData.put("Percentage", String.format("%.2f", percentage));
+        });
+
 
         return new ArrayList<>(studentMap.values());
     }
