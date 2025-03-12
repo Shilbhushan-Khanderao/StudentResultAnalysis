@@ -26,6 +26,7 @@ public class Score {
     private int iaMarks;
     private int labMarks;
     private int totalMarks;
+    private String grade;
     
     public Score(Student student, Subject subject) {
 		this.student = student;
@@ -35,6 +36,9 @@ public class Score {
     @PrePersist
     @PreUpdate
     private void calculateTotalMarks() {
+    	if(subject.getType().equalsIgnoreCase("graded")) {
+    		this.totalMarks = 0;
+    	}
         this.totalMarks = this.theoryMarks + this.iaMarks + this.labMarks;
     }
 

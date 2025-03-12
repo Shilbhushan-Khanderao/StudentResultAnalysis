@@ -64,6 +64,7 @@ public class ScoreService {
             String studentId = score.getStudent().getRollNumber();
             String studentName = score.getStudent().getName();
             String subject = score.getSubject().getName();
+            String subjectType = score.getSubject().getType();
             
             // Ensure student entry exists
             studentMap.putIfAbsent(studentId, new LinkedHashMap<>());
@@ -73,6 +74,9 @@ public class ScoreService {
             studentData.put("Student ID", studentId);
             studentData.put("Student Name", studentName);
             
+            if(subjectType.equalsIgnoreCase("GRADED")) {
+            	studentData.put(subject, score.getGrade());
+            } else {            
             // Add marks for the subject
             studentData.put(subject, Map.of(
                 "TH", score.getTheoryMarks(),
@@ -83,6 +87,7 @@ public class ScoreService {
             
             int existingTotal = (int) studentData.getOrDefault("Total", 0);
             studentData.put("Total", existingTotal + score.getTotalMarks());
+            }
         }
         
         studentMap.forEach((studentId, studentData) -> {
@@ -108,18 +113,25 @@ public class ScoreService {
             String studentId = score.getStudent().getRollNumber();
             String studentName = score.getStudent().getName();
             String subject = score.getSubject().getName();
+            String subjectType = score.getSubject().getType();
 
             studentMap.putIfAbsent(studentId, new LinkedHashMap<>());
             Map<String, Object> studentData = studentMap.get(studentId);
 
             studentData.put("Student ID", studentId);
             studentData.put("Student Name", studentName);
-            studentData.put(subject, Map.of(
-                "TH", score.getTheoryMarks(),
-                "IA", score.getIaMarks(),
-                "Lab", score.getLabMarks(),
-                "TOT", score.getTheoryMarks() + score.getIaMarks() + score.getLabMarks()
-            ));
+            
+            if(subjectType.equalsIgnoreCase("GRADED")) {
+            	studentData.put(subject, score.getGrade());
+            } else {            
+            // Add marks for the subject
+	            studentData.put(subject, Map.of(
+	                "TH", score.getTheoryMarks(),
+	                "IA", score.getIaMarks(),
+	                "Lab", score.getLabMarks(),
+	                "TOT", score.getTheoryMarks() + score.getIaMarks() + score.getLabMarks()
+	            ));
+            }
         }
 
         return new ArrayList<>(studentMap.values());
@@ -235,6 +247,58 @@ public class ScoreService {
         } catch (Exception e) {
             logger.error("Error processing file: {}", e.getMessage(), e);
             throw new RuntimeException("Error processing CSV file");
+        }
+    }
+    
+    // Upload Project and GAC grades via CSV.
+    @Transactional
+    public void importProjectAndGACGrades(MultipartFile file) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            
+            // Fetch Project and GAC subjects
+            Subject projectSubject = subjectRepository.findByName("Project")
+                    .orElseThrow(() -> new SubjectNotFoundException("Project"));
+
+            Subject gacSubject = subjectRepository.findByName("GAC")
+                    .orElseThrow(() -> new SubjectNotFoundException("GAC"));
+            
+            logger.info("Project Type: " + projectSubject.getType() + "GAC Type: " + gacSubject.getType());
+            
+
+            // Ensure both subjects are graded subjects
+            if (!projectSubject.getType().equalsIgnoreCase("GRADED") || !gacSubject.getType().equalsIgnoreCase("GRADED")) {
+                throw new IllegalArgumentException("Project and GAC must be GRADED subjects");
+            }
+
+            String line = reader.readLine(); // Read header
+            while ((line = reader.readLine()) != null) {
+                String[] data = line.split(",");
+                if (data.length < 3) continue; // Skip invalid rows
+
+                String rollNumber = data[0].trim();
+                String projectGrade = data[1].trim();
+                String gacGrade = data[2].trim();
+
+                // Fetch student
+                Student student = studentRepository.findByRollNumber(rollNumber)
+                        .orElseThrow(() -> new StudentNotFoundException(rollNumber));
+
+                // Save Project Grade
+                Score projectScore = scoreRepository.findByStudentAndSubject(student, projectSubject)
+                        .orElse(new Score(student, projectSubject));
+                projectScore.setGrade(projectGrade);
+                projectScore.setTotalMarks(0); // Ensure totalMarks is null for graded subjects
+                scoreRepository.save(projectScore);
+
+                // Save GAC Grade
+                Score gacScore = scoreRepository.findByStudentAndSubject(student, gacSubject)
+                        .orElse(new Score(student, gacSubject));
+                gacScore.setGrade(gacGrade);
+                gacScore.setTotalMarks(0);
+                scoreRepository.save(gacScore);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error processing CSV file", e);
         }
     }
 

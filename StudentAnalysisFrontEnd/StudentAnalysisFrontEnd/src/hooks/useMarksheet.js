@@ -23,8 +23,8 @@ export const useMarksheet = (batchId) => {
           const flatStudent = {
             "Student ID": student["Student ID"],
             "Student Name": student["Student Name"],
-            "Total": student["Total"], 
-            "Percentage": student["Percentage"], 
+            Total: student["Total"],
+            Percentage: student["Percentage"],
           };
 
           subjectsList.forEach((sub) => {
@@ -57,15 +57,22 @@ export const useMarksheet = (batchId) => {
       console.log("Subject-Wise API Response:", data);
 
       const availableSubjects = Object.keys(data[0]).filter(
-        (key) => key !== "Student ID" && key !== "Student Name" && key !== "Total" && key !== "Percentage" && key !== "GAC" && key !== "Project" && key !== "Rank"
+        (key) =>
+          key !== "Student ID" &&
+          key !== "Student Name" &&
+          key !== "Total" &&
+          key !== "Percentage" &&
+          key !== "GAC" &&
+          key !== "Project" &&
+          key !== "Rank"
       );
-  
+
       const flattenedData = data.map((student) => {
         const flatStudent = {
           "Student ID": student["Student ID"],
           "Student Name": student["Student Name"],
         };
-  
+
         availableSubjects.forEach((sub) => {
           if (student[sub]) {
             flatStudent[`${sub}_TH`] = student[sub].TH || "-";
@@ -74,16 +81,10 @@ export const useMarksheet = (batchId) => {
             flatStudent[`${sub}_TOT`] = student[sub].TOT || "-";
           }
         });
-  
-        flatStudent["Total"] = student.Total || 0;
-        flatStudent["Percentage"] = student.Percentage || "0.00";
-        flatStudent["GAC"] = student.GAC || "-";
-        flatStudent["Project"] = student.Project || "-";
-        flatStudent["Rank"] = student.Rank || "-";
-  
+
         return flatStudent;
       });
-  
+
       console.log("Flattened Subject-Wise Marksheet Data", flattenedData);
       setMarksheet(flattenedData);
     } catch (error) {

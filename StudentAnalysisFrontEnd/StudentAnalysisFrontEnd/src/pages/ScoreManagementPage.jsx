@@ -33,13 +33,15 @@ const ScoreManagementPage = () => {
 
       <Tabs value={tab} onChange={(e, val) => setTab(val)} centered>
         <Tab label="Upload Marks" />
+        <Tab label="Upload Multiple Subjects" />
+        <Tab label="Upload Project & GAC Grades" />
         <Tab label="Delete Scores" />
-        <Tab label="Batch-Wise Marksheet" />
-        <Tab label="Subject-Wise Marksheet" />
+        <Tab label="Integrated Marksheet" />
+        <Tab label="Subject Marksheet" />
       </Tabs>
 
       <Box mt={3}>
-      <TextField
+        <TextField
           select
           label="Select Batch"
           value={selectedBatch}
@@ -53,9 +55,11 @@ const ScoreManagementPage = () => {
             </MenuItem>
           ))}
         </TextField>
-        {tab === 0 && <UploadMarks />}
-        {tab === 1 && <DeleteScores />}
-        {tab === 2 && (
+        {tab === 0 && <UploadMarks type="marks" />}
+        {tab === 1 && <UploadMarks type="multiple-marks" />}
+        {tab === 2 && <UploadMarks type="project-gac" />}
+        {tab === 3 && <DeleteScores />}
+        {tab === 4 && (
           <>
             <Button
               variant="contained"
@@ -68,7 +72,7 @@ const ScoreManagementPage = () => {
             {marksheet.length > 0 && <MarksheetTable data={marksheet} />}
           </>
         )}
-        {tab === 3 && (
+        {tab === 5 && (
           <>
             {/* Subject Selection for Subject-Wise Marksheet */}
             <TextField
@@ -96,8 +100,9 @@ const ScoreManagementPage = () => {
             >
               Fetch Subject-Wise Marksheet
             </Button>
-            {/* Display Marksheet */}
-            {marksheet.length > 0 && <MarksheetTable data={marksheet} isSubjectWise={tab === 3}/>}
+            {marksheet.length > 0 && (
+              <MarksheetTable data={marksheet} isSubjectWise={tab === 5} />
+            )}
           </>
         )}
       </Box>

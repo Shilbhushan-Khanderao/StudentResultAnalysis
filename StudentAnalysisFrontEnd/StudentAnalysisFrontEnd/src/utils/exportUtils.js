@@ -108,12 +108,21 @@ export const exportSubjectMarksheetToPdf = (marksheet, mainTitle, subTitle) => {
   const availableSubjects = [
     ...new Set(
       Object.keys(marksheet[0])
-        .filter((key) => key.includes("_TH") || key.includes("_IA") || key.includes("_Lab") || key.includes("_TOT"))
+        .filter(
+          (key) =>
+            key.includes("_TH") ||
+            key.includes("_IA") ||
+            key.includes("_Lab") ||
+            key.includes("_TOT")
+        )
         .map((key) => key.split("_")[0])
     ),
   ];
 
-  console.log("Subjects included in Subject-Wise Marksheet:", availableSubjects);
+  console.log(
+    "Subjects included in Subject-Wise Marksheet:",
+    availableSubjects
+  );
 
   const headRows = [
     [
@@ -125,11 +134,7 @@ export const exportSubjectMarksheetToPdf = (marksheet, mainTitle, subTitle) => {
         styles: { halign: "center", fillColor: [200, 200, 255] },
       })),
     ],
-    [
-      "",
-      "",
-      ...availableSubjects.flatMap(() => ["TH", "IA", "LAB", "TOT"]),
-    ],
+    ["", "", ...availableSubjects.flatMap(() => ["TH", "IA", "LAB", "TOT"])],
   ];
 
   const bodyRows = marksheet.map((student) => [
@@ -167,33 +172,10 @@ export const exportSubjectMarksheetToPdf = (marksheet, mainTitle, subTitle) => {
     columnStyles: {
       1: { halign: "left" },
     },
-    didParseCell: function (data) {
-      if (data.row.index >= 0) {
-        // Get the column header name (TH, IA, LAB, TOT)
-        const columnHeader = headRows[1][data.column.index];
-  
-        // Define passing thresholds based on max marks
-        const passingThresholds = {
-          "TH": 40 * 0.4,
-          "IA": 20 * 0.4, 
-          "LAB": 40 * 0.4,
-          "TOT": 100 * 0.4,
-        };
-  
-        if (passingThresholds[columnHeader] !== undefined) {
-          const cellValue = parseFloat(data.cell.text[0]); // Convert text to number
-  
-          if (cellValue === "-" || (!isNaN(parseFloat(cellValue)) && parseFloat(cellValue) < passingThresholds[columnHeader])) {
-            data.cell.styles.fillColor = [255, 182, 182]; // Light red color for failed marks
-          }
-        }
-      }
-    },
   });
 
   doc.save("Subject_Wise_Marksheet.pdf");
 };
-
 
 export const exportBatchMarksheetToExcel = (data) => {
   if (!data || data.length === 0) {
@@ -304,12 +286,21 @@ export const exportSubjectMarksheetToExcel = (marksheet) => {
   const availableSubjects = [
     ...new Set(
       Object.keys(marksheet[0])
-        .filter((key) => key.includes("_TH") || key.includes("_IA") || key.includes("_Lab") || key.includes("_TOT"))
+        .filter(
+          (key) =>
+            key.includes("_TH") ||
+            key.includes("_IA") ||
+            key.includes("_Lab") ||
+            key.includes("_TOT")
+        )
         .map((key) => key.split("_")[0])
     ),
   ];
 
-  console.log("Subjects included in Subject-Wise Marksheet:", availableSubjects);
+  console.log(
+    "Subjects included in Subject-Wise Marksheet:",
+    availableSubjects
+  );
 
   // Create first header row
   const headerRow1 = ["Student ID", "Student Name"];

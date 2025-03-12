@@ -9,7 +9,7 @@ export const subjectsList = [
   "MS.NET",
 ];
 
-export const getColumns = (data) => {
+export const getColumns = (data, isSubjectWise) => {
   if (!data || data.length === 0) return [];
 
   const baseColumns = [
@@ -18,7 +18,13 @@ export const getColumns = (data) => {
   ];
 
   const subjectColumns = Object.keys(data[0])
-    .filter((key) => key.includes("_TH") || key.includes("_IA") || key.includes("_Lab") || key.includes("_TOT"))
+    .filter(
+      (key) =>
+        key.includes("_TH") ||
+        key.includes("_IA") ||
+        key.includes("_Lab") ||
+        key.includes("_TOT")
+    )
     .map((subject) => ({
       accessorKey: subject,
       header: subject.replace(/_/g, " "),
@@ -32,5 +38,7 @@ export const getColumns = (data) => {
     { accessorKey: "Rank", header: "Rank" },
   ];
 
-  return [...baseColumns, ...subjectColumns, ...extraColumns];
+  return isSubjectWise
+    ? [...baseColumns, ...subjectColumns]
+    : [...baseColumns, ...subjectColumns, ...extraColumns];
 };

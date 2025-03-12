@@ -71,6 +71,12 @@ public class ScoreController {
         scoreService.importMultiSubjectMarks(file);
         return ResponseEntity.ok(new ApiResponse("Multiple subjects marks uploaded successfully", null));
     }
+    
+    @PostMapping("/upload/project-gac")
+    public ResponseEntity<ApiResponse> uploadProjectAndGACGrades(@RequestParam("file") MultipartFile file) {
+        scoreService.importProjectAndGACGrades(file);
+        return ResponseEntity.ok(new ApiResponse("Project and GAC grades uploaded successfully", null));
+    }
 
     @PutMapping("/update/single")
     public ResponseEntity<ApiResponse> updateSingleStudentMarks(@RequestParam String rollNumber,

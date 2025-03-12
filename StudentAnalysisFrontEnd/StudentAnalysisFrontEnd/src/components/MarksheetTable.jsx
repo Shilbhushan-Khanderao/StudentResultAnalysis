@@ -15,7 +15,7 @@ const MarksheetTable = ({ data, isSubjectWise }) => {
   if (!data || data.length === 0) return <p>No data available.</p>;
   
   useEffect(() => {
-    setColumns(getColumns(data));
+      setColumns(getColumns(data, isSubjectWise));
   }, [data]); 
 
   const handlePdfExport = () => {

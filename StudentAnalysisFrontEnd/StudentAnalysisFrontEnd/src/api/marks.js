@@ -49,6 +49,18 @@ export const uploadMultipleSubjectsMarks = async (file) => {
   return response.data;
 };
 
+// Upload Project and GAC grades via CSV
+export const uploadProjectAndGACGrades = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await axios.post("/marks/upload/project-gac", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  return response.data;
+};
+
 // Update marks for a single student
 export const updateStudentMarks = async (
   rollNumber,
